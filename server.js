@@ -25,9 +25,11 @@ app.use(express.json()); // Permite que o servidor entenda JSON enviado no corpo
 // A "despensa" onde guardaremos todos os nossos dados (imóveis, usuários, etc.).
 const dbURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/presence-imobiliaria';
 
+// Debug: verificar se a variável está sendo carregada
+console.log('MONGODB_URI configurada:', process.env.MONGODB_URI ? 'SIM' : 'NÃO');
+console.log('String de conexão:', dbURI);
+
 mongoose.connect(dbURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     serverSelectionTimeoutMS: 10000, // Timeout de 10 segundos
     socketTimeoutMS: 45000, // Timeout do socket
 })
