@@ -2,6 +2,9 @@
 // =================== ATLAS: ARQUITETURA DO BACKEND =================
 // ===================================================================
 
+// --- 0. CARREGAMENTO DE VARIÁVEIS DE AMBIENTE ---
+require('dotenv').config();
+
 // --- 1. IMPORTAÇÃO DE DEPENDÊNCIAS ---
 // Ferramentas essenciais para o nosso servidor funcionar.
 const express = require('express'); // Para criar o servidor e as rotas da API.
@@ -20,12 +23,16 @@ app.use(express.json()); // Permite que o servidor entenda JSON enviado no corpo
 
 // --- 4. CONEXÃO COM O BANCO DE DADOS ---
 // A "despensa" onde guardaremos todos os nossos dados (imóveis, usuários, etc.).
-// NOTA: A string de conexão abaixo é um exemplo. Ela precisará ser substituída pela URL do seu banco de dados MongoDB real.
-const dbURI = 'mongodb+srv://victorhugn0diniz:tKYnRy83loZ087b6@cluster0.pzoluqq.mongodb.net/presence-imobiliaria?retryWrites=true&w=majority&appName=Cluster0';;
+const dbURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/presence-imobiliaria';
 
-mongoose.connect(dbURI)
-    .then(() => console.log('Conectado com sucesso ao MongoDB.'))
-    .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
+mongoose.connect(dbURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000, // Timeout de 10 segundos
+    socketTimeoutMS: 45000, // Timeout do socket
+})
+.then(() => console.log('Conectado com sucesso ao MongoDB.'))
+.catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
 
 // --- 5. DEFINIÇÃO DOS "MOLDES" (SCHEMAS E MODELS) ---
 // Define como os dados serão estruturados no banco de dados.
