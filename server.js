@@ -21,7 +21,7 @@ app.use(express.json()); // Permite que o servidor entenda JSON enviado no corpo
 // --- 4. CONEXÃO COM O BANCO DE DADOS ---
 // A "despensa" onde guardaremos todos os nossos dados (imóveis, usuários, etc.).
 // NOTA: A string de conexão abaixo é um exemplo. Ela precisará ser substituída pela URL do seu banco de dados MongoDB real.
-const dbURI = 'mongodb+srv://<username>:<password>@cluster0.mongodb.net/presence-imobiliaria?retryWrites=true&w=majority';
+const dbURI = 'mongodb+srv://victorhugn0diniz:tKYnRy83loZ087b6@cluster0.pzoluqq.mongodb.net/presence-imobiliaria?retryWrites=true&w=majority&appName=Cluster0';;
 
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('Conectado com sucesso ao MongoDB.'))
