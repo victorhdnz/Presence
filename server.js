@@ -23,7 +23,7 @@ app.use(express.json()); // Permite que o servidor entenda JSON enviado no corpo
 // NOTA: A string de conexão abaixo é um exemplo. Ela precisará ser substituída pela URL do seu banco de dados MongoDB real.
 const dbURI = 'mongodb+srv://victorhugn0diniz:tKYnRy83loZ087b6@cluster0.pzoluqq.mongodb.net/presence-imobiliaria?retryWrites=true&w=majority&appName=Cluster0';;
 
-mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(dbURI)
     .then(() => console.log('Conectado com sucesso ao MongoDB.'))
     .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
 
