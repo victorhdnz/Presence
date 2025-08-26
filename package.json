@@ -1,0 +1,11 @@
+{
+  "name": "presence-imobiliaria-frontend",
+  "version": "1.0.0",
+  "description": "Frontend para o site da Presence Consultoria Imobiliária.",
+  "main": "script.js",
+  "scripts": {
+    "start": "echo \"Nenhum script de start necessário para o frontend.\" && exit 0"
+  },
+  "author": "",
+  "license": "ISC"
+}
