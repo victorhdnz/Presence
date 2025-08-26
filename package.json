@@ -1,11 +1,17 @@
 {
-  "name": "presence-imobiliaria-frontend",
+  "name": "presence-imobiliaria-backend",
   "version": "1.0.0",
-  "description": "Frontend para o site da Presence Consultoria Imobiliária.",
-  "main": "script.js",
+  "description": "Backend para o site da Presence Consultoria Imobiliária.",
+  "main": "server.js",
   "scripts": {
-    "start": "echo \"Nenhum script de start necessário para o frontend.\" && exit 0"
+    "start": "node server.js"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.1",
+    "nodemailer": "^6.9.13"
+  }
 }
