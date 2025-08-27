@@ -234,17 +234,21 @@ export default function ImoveisPage() {
                 >
                   {/* Imagem */}
                   <div className="relative h-48 sm:h-56 bg-gray-200">
-                    {property.images && property.images.length > 0 ? (
+                    {property.images && property.images.length > 0 && property.images[0].url ? (
                       <img
                         src={property.images.find(img => img.isMain)?.url || property.images[0].url}
                         alt={property.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          target.nextElementSibling?.classList.remove('hidden')
+                        }}
                       />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <Home className="h-12 w-12 text-gray-400" />
-                      </div>
-                    )}
+                    ) : null}
+                    <div className={`flex items-center justify-center h-full ${property.images && property.images.length > 0 && property.images[0].url ? 'hidden' : ''}`}>
+                      <Home className="h-12 w-12 text-gray-400" />
+                    </div>
                     
                     {property.isHighlighted && (
                       <div className="absolute top-2 right-2 bg-primary-500 text-white px-2 py-1 rounded-full text-xs font-medium">
