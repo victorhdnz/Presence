@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { 
   Building2, Home, MapPin, DollarSign, Bed, Bath, Car, 
-  Ruler, FileText, Upload, X, Plus, ArrowLeft 
+  Ruler, FileText, Upload, X, Plus, ArrowLeft, Star 
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Header from '@/components/Header'
