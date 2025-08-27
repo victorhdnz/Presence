@@ -40,6 +40,13 @@ interface Property {
   createdAt: string
 }
 
+// Função necessária para exportação estática
+export async function generateStaticParams() {
+  // Retorna um array vazio para permitir exportação estática
+  // As páginas serão geradas dinamicamente no cliente
+  return []
+}
+
 export default function PropertyDetails() {
   const params = useParams()
   const router = useRouter()
