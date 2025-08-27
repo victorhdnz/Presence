@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { 
   Building2, Users, Home, Plus, Edit, Trash2, Eye, 
   Star, CheckCircle, XCircle, DollarSign, TrendingUp, MessageCircle,
-  FileText, CheckSquare, UserCheck, Building, X
+  FileText, CheckSquare, UserCheck, Building, X, Upload
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Header from '@/components/Header'
@@ -102,6 +102,11 @@ export default function AdminDashboard() {
     longDescription: '',
     corretor: CORRETORAS[0]
   })
+  const [newPropertyImages, setNewPropertyImages] = useState<Array<{
+    url: string
+    file?: File
+    isMain: boolean
+  }>>([])
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
@@ -121,7 +126,6 @@ export default function AdminDashboard() {
       setUsers(usersRes.data)
           } catch (error) {
         toast.error('Erro ao carregar dados do dashboard')
-        console.error('Erro ao buscar dados:', error)
       } finally {
       setIsLoading(false)
     }
@@ -136,7 +140,6 @@ export default function AdminDashboard() {
       toast.success(`Imóvel ${status === 'ativo' ? 'aprovado' : 'rejeitado'} com sucesso!`)
       fetchData()
     } catch (error) {
-      console.error('Erro ao alterar status:', error)
       toast.error('Erro ao alterar status do imóvel')
     }
   }
@@ -147,7 +150,6 @@ export default function AdminDashboard() {
       toast.success(`Imóvel ${isHighlighted ? 'destacado' : 'desdestacado'} com sucesso!`)
       fetchData()
     } catch (error) {
-      console.error('Erro ao alterar destaque:', error)
       toast.error('Erro ao alterar destaque do imóvel')
     }
   }
@@ -221,8 +223,56 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const url = event.target?.result as string
+          setNewPropertyImages(prev => [...prev, {
+            url,
+            file,
+            isMain: prev.length === 0
+          }])
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+
+  const removeImage = (index: number) => {
+    setNewPropertyImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const setMainImage = (index: number) => {
+    setNewPropertyImages(prev => prev.map((img, i) => ({
+      ...img,
+      isMain: i === index
+    })))
+  }
+
   const handleCreateProperty = async () => {
     try {
+      // Upload das imagens primeiro
+      const uploadedImages = []
+      for (const image of newPropertyImages) {
+        if (image.file) {
+          const formDataImage = new FormData()
+          formDataImage.append('image', image.file)
+          
+          const response = await api.post('/upload/images', formDataImage, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+          
+          uploadedImages.push({
+            url: response.data.url,
+            isMain: image.isMain
+          })
+        }
+      }
+
       const propertyData = {
         ...newProperty,
         price: Number(newProperty.price),
@@ -230,7 +280,8 @@ export default function AdminDashboard() {
         bathrooms: Number(newProperty.bathrooms),
         parkingSpaces: Number(newProperty.parkingSpaces),
         totalArea: Number(newProperty.totalArea),
-        corretor: newProperty.corretor
+        corretor: newProperty.corretor,
+        images: uploadedImages
       }
 
       await api.post('/properties', propertyData)
@@ -248,6 +299,7 @@ export default function AdminDashboard() {
         longDescription: '',
         corretor: CORRETORAS[0]
       })
+      setNewPropertyImages([])
       fetchData()
     } catch (error) {
       toast.error('Erro ao criar imóvel')
@@ -266,6 +318,9 @@ export default function AdminDashboard() {
     )
   }
 
+  // Filtrar imóveis por tipo e status
+  const adminProperties = properties.filter(p => p.submittedBy?.role === 'admin' || (p.status === 'ativo' && !p.submittedBy?.role))
+  const clientProperties = properties.filter(p => p.submittedBy && p.submittedBy.role !== 'admin' && p.status !== 'rejeitado')
   const activeProperties = properties.filter(p => p.status === 'ativo')
   const pendingProperties = properties.filter(p => p.status === 'inativo')
   const totalUsers = users.length
@@ -454,6 +509,88 @@ export default function AdminDashboard() {
                     placeholder="Descrição detalhada do imóvel"
                   />
                 </div>
+
+                {/* Upload de Imagens */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fotos do Imóvel</label>
+                  
+                  <div className="space-y-4">
+                    {/* Área de Upload */}
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                      <input
+                        type="file"
+                        id="admin-images"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="admin-images"
+                        className="cursor-pointer flex flex-col items-center space-y-2"
+                      >
+                        <Upload className="h-8 w-8 text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          Clique para adicionar fotos ou arraste aqui
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          PNG, JPG, JPEG até 10MB cada
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Preview das Imagens */}
+                    {newPropertyImages.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {newPropertyImages.map((image, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={image.url}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border"
+                            />
+                            
+                            {/* Badge de Foto Principal */}
+                            {image.isMain && (
+                              <div className="absolute top-2 left-2 bg-primary-600 text-white text-xs px-2 py-1 rounded">
+                                Principal
+                              </div>
+                            )}
+                            
+                            {/* Botões de Ação */}
+                            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
+                              {!image.isMain && (
+                                <button
+                                  type="button"
+                                  onClick={() => setMainImage(index)}
+                                  className="bg-blue-600 text-white p-2 rounded text-xs hover:bg-blue-700"
+                                  title="Definir como principal"
+                                >
+                                  <Star className="h-4 w-4" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="bg-red-600 text-white p-2 rounded text-xs hover:bg-red-700"
+                                title="Remover imagem"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {newPropertyImages.length > 0 && (
+                      <p className="text-sm text-gray-600">
+                        {newPropertyImages.length} foto(s) selecionada(s). 
+                        {newPropertyImages.find(img => img.isMain) ? ' A foto principal está marcada.' : ' Clique na estrela para definir a foto principal.'}
+                      </p>
+                    )}
+                  </div>
+                </div>
                 
                 <div className="flex justify-end space-x-4">
                   <button
@@ -554,7 +691,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {properties.slice(0, 5).map((property) => (
+                      {adminProperties.slice(0, 5).map((property) => (
                         <tr key={property._id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
@@ -581,16 +718,11 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button
-                              onClick={() => router.push(`/admin/imovel/${property._id}`)}
+                              onClick={() => handleViewDetails(property._id)}
                               className="text-primary-600 hover:text-primary-900 mr-3"
+                              title="Ver detalhes"
                             >
                               <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => router.push(`/admin/editar-imovel/${property._id}`)}
-                              className="text-blue-600 hover:text-blue-900 mr-3"
-                            >
-                              <Edit className="h-4 w-4" />
                             </button>
                           </td>
                         </tr>
@@ -630,7 +762,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {properties.filter(p => p.submittedBy && p.submittedBy.role !== 'admin' && p.status !== 'rejeitado').map((property) => (
+                    {clientProperties.map((property) => (
                       <tr key={property._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -687,7 +819,7 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
-                {properties.filter(p => p.submittedBy && p.submittedBy.role !== 'admin' && p.status !== 'rejeitado').length === 0 && (
+                {clientProperties.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     Nenhum imóvel de cliente
                   </div>
@@ -724,7 +856,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {properties.filter(p => p.submittedBy?.role === 'admin' || (p.status === 'ativo' && !p.submittedBy?.role)).map((property) => (
+                                         {adminProperties.map((property) => (
                       <tr key={property._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -781,7 +913,7 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
-                {properties.filter(p => p.submittedBy?.role === 'admin' || (p.status === 'ativo' && !p.submittedBy?.role)).length === 0 && (
+                                 {adminProperties.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     Nenhum imóvel das corretoras
                   </div>
