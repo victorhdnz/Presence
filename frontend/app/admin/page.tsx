@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { 
   Building2, Users, Home, Plus, Edit, Trash2, Eye, 
   Star, CheckCircle, XCircle, DollarSign, TrendingUp, MessageCircle,
-  FileText, CheckSquare, UserCheck, Building
+  FileText, CheckSquare, UserCheck, Building, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Header from '@/components/Header'
@@ -119,10 +119,10 @@ export default function AdminDashboard() {
       ])
       setProperties(propertiesRes.data)
       setUsers(usersRes.data)
-    } catch (error) {
-      console.error('Erro ao buscar dados:', error)
-      toast.error('Erro ao carregar dados do dashboard')
-    } finally {
+          } catch (error) {
+        toast.error('Erro ao carregar dados do dashboard')
+        console.error('Erro ao buscar dados:', error)
+      } finally {
       setIsLoading(false)
     }
   }

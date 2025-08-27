@@ -7,7 +7,7 @@ const transporter = nodemailer.createTransport({
     secure: false,
     auth: {
         user: 'apikey',
-        pass: process.env.EMAIL_PASS // SendGrid API Key
+        pass: process.env.SENDGRID_API_KEY // Usando a variável que já está no Render
     }
 });
 

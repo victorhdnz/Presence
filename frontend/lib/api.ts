@@ -14,12 +14,12 @@ api.interceptors.request.use(
     // Verificar se está no browser antes de acessar localStorage
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('presence_token')
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-        console.log('Token anexado à requisição:', token.substring(0, 20) + '...')
-      } else {
-        console.log('Nenhum token encontrado no localStorage')
-      }
+              if (token) {
+          config.headers.Authorization = `Bearer ${token}`
+          // console.log removido para limpar warnings
+        } else {
+          // console.log removido para limpar warnings
+        }
     }
     return config
   },
