@@ -259,8 +259,8 @@ export default function AdminDashboard() {
       const uploadedImages = []
       for (const image of newPropertyImages) {
         if (image.file) {
-          const formDataImage = new FormData()
-          formDataImage.append('image', image.file)
+                     const formDataImage = new FormData()
+           formDataImage.append('images', image.file)
           
           const response = await api.post('/upload/images', formDataImage, {
             headers: { 'Content-Type': 'multipart/form-data' }

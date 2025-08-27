@@ -9,12 +9,15 @@ const router = express.Router();
 router.get('/test', (req, res) => {
     res.json({ 
         message: 'Serviço de upload funcionando!', 
-        cloudinaryConfigured: !!process.env.CLOUDINARY_CLOUD_NAME 
+        cloudinaryConfigured: !!process.env.CLOUDINARY_CLOUD_NAME,
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+        hasApiSecret: !!process.env.CLOUDINARY_API_SECRET
     });
 });
 
-// ROTA PROTEGIDA: Upload de imagens (apenas admins)
-router.post('/images', authenticateToken, requireAdmin, upload.array('images', 10), async (req, res) => {
+// ROTA PROTEGIDA: Upload de imagens (usuários autenticados)
+router.post('/images', authenticateToken, upload.array('images', 10), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ message: 'Nenhuma imagem foi enviada' });

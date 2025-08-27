@@ -270,7 +270,7 @@ export default function CadastrarImovelPage() {
       for (const image of formData.images) {
         if (image.file) {
           const formDataImage = new FormData()
-          formDataImage.append('image', image.file)
+          formDataImage.append('images', image.file)
           
           const response = await api.post('/upload/images', formDataImage, {
             headers: { 'Content-Type': 'multipart/form-data' }
