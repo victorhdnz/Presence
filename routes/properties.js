@@ -55,7 +55,7 @@ router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
         const {
             title, purpose, price, neighborhood, address,
             bedrooms, bathrooms, parkingSpaces, landSize, totalArea,
-            longDescription, details, features
+            longDescription, details, features, corretor
         } = req.body;
 
         // Criar novo imóvel
@@ -73,6 +73,7 @@ router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
             longDescription,
             details,
             features,
+            corretor,
             submittedBy: req.user._id,
             status: 'inativo' // Aguardando aprovação do admin
         });
