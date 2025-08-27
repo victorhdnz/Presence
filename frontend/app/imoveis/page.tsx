@@ -42,8 +42,13 @@ export default function ImoveisPage() {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
 
   useEffect(() => {
+    console.log('🔄 useEffect executado - buscando propriedades')
     fetchProperties()
   }, [])
+
+  useEffect(() => {
+    console.log('🔍 Estado do modal:', { showDetailsModal, selectedProperty, isLoadingDetails })
+  }, [showDetailsModal, selectedProperty, isLoadingDetails])
 
   const fetchProperties = async () => {
     try {
@@ -96,13 +101,17 @@ export default function ImoveisPage() {
   }
 
   const handleViewDetails = async (propertyId: string) => {
+    console.log('🔍 handleViewDetails chamado com ID:', propertyId)
     try {
       setIsLoadingDetails(true)
+      console.log('🚀 Fazendo requisição para API...')
       const response = await api.get(`/properties/${propertyId}`)
+      console.log('✅ Resposta da API:', response.data)
       setSelectedProperty(response.data)
       setShowDetailsModal(true)
+      console.log('🎉 Modal aberto!')
     } catch (error) {
-      console.error('Erro ao buscar detalhes:', error)
+      console.error('❌ Erro ao buscar detalhes:', error)
     } finally {
       setIsLoadingDetails(false)
     }
@@ -325,7 +334,10 @@ export default function ImoveisPage() {
                                          {/* Botões */}
                      <div className="space-y-2">
                        <button
-                         onClick={() => handleViewDetails(property._id)}
+                         onClick={() => {
+                           console.log('🖱️ Botão Ver Detalhes clicado para imóvel:', property._id)
+                           handleViewDetails(property._id)
+                         }}
                          className="w-full btn-primary text-center block text-sm sm:text-base py-2 sm:py-3"
                        >
                          Ver Detalhes
