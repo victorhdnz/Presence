@@ -1,18 +1,21 @@
 const nodemailer = require('nodemailer');
 
-// Configuração do transporter de e-mail
+// Configuração do transporter de e-mail (SendGrid)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.sendgrid.net',
+    port: 587,
+    secure: false,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: 'apikey',
+        pass: process.env.EMAIL_PASS // SendGrid API Key
     }
 });
 
 // E-mails das corretoras
 const CORRETORAS_EMAILS = [
-    'helo@presence.com.br', // Substitua pelos e-mails reais
-    'vania@presence.com.br'  // Substitua pelos e-mails reais
+    'victorhugo10diniz@gmail.com', // Email para teste - substitua pelos emails reais das corretoras
+    // 'helo@presence.com.br', 
+    // 'vania@presence.com.br'
 ];
 
 // Função para enviar notificação de login de cliente

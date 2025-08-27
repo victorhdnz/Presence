@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { 
   Building2, Users, Home, Plus, Edit, Trash2, Eye, 
-  Star, CheckCircle, XCircle, DollarSign, TrendingUp, MessageCircle
+  Star, CheckCircle, XCircle, DollarSign, TrendingUp, MessageCircle,
+  FileText, CheckSquare, UserCheck, Building
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Header from '@/components/Header'
@@ -23,12 +24,34 @@ interface Property {
   submittedBy: {
     name: string
     email: string
+    role?: string
   }
   corretor?: {
     name: string
     whatsapp: string
     email: string
   }
+  purpose?: string
+  bedrooms?: number
+  bathrooms?: number
+  parkingSpaces?: number
+  totalArea?: number
+  landSize?: number
+  longDescription?: string
+  details?: string[]
+  features?: string[]
+  address?: {
+    street: string
+    number: string
+    complement?: string
+    city: string
+    state: string
+    zipCode?: string
+  }
+  images?: Array<{
+    url: string
+    isMain: boolean
+  }>
 }
 
 interface User {
@@ -63,6 +86,10 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [showNewPropertyForm, setShowNewPropertyForm] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
+  const [showPropertyDetails, setShowPropertyDetails] = useState(false)
+  const [showEditPropertyForm, setShowEditPropertyForm] = useState(false)
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null)
   const [newProperty, setNewProperty] = useState({
     title: '',
     purpose: 'venda' as 'venda' | 'aluguel',
@@ -102,10 +129,14 @@ export default function AdminDashboard() {
 
   const handlePropertyStatus = async (propertyId: string, status: string) => {
     try {
-      await api.patch(`/properties/${propertyId}/approve`, { status })
+      await api.patch(`/properties/${propertyId}/approve`, { 
+        status, 
+        approved: status === 'ativo' 
+      })
       toast.success(`Imóvel ${status === 'ativo' ? 'aprovado' : 'rejeitado'} com sucesso!`)
       fetchData()
     } catch (error) {
+      console.error('Erro ao alterar status:', error)
       toast.error('Erro ao alterar status do imóvel')
     }
   }
@@ -116,6 +147,7 @@ export default function AdminDashboard() {
       toast.success(`Imóvel ${isHighlighted ? 'destacado' : 'desdestacado'} com sucesso!`)
       fetchData()
     } catch (error) {
+      console.error('Erro ao alterar destaque:', error)
       toast.error('Erro ao alterar destaque do imóvel')
     }
   }
@@ -139,6 +171,53 @@ export default function AdminDashboard() {
       fetchData()
     } catch (error) {
       toast.error('Erro ao alterar status do usuário')
+    }
+  }
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) return
+    
+    try {
+      await api.delete(`/auth/users/${userId}`)
+      toast.success('Usuário excluído com sucesso!')
+      fetchData()
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erro ao excluir usuário'
+      toast.error(message)
+    }
+  }
+
+  const handleViewDetails = async (propertyId: string) => {
+    try {
+      const response = await api.get(`/properties/${propertyId}`)
+      setSelectedProperty(response.data)
+      setShowPropertyDetails(true)
+    } catch (error) {
+      toast.error('Erro ao carregar detalhes do imóvel')
+    }
+  }
+
+  const handleEditProperty = async (propertyId: string) => {
+    try {
+      const response = await api.get(`/properties/${propertyId}`)
+      setEditingProperty(response.data)
+      setShowEditPropertyForm(true)
+    } catch (error) {
+      toast.error('Erro ao carregar dados do imóvel para edição')
+    }
+  }
+
+  const handleUpdateProperty = async (updatedData: any) => {
+    if (!editingProperty) return
+    
+    try {
+      await api.put(`/properties/${editingProperty._id}`, updatedData)
+      toast.success('Imóvel atualizado com sucesso!')
+      setShowEditPropertyForm(false)
+      setEditingProperty(null)
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao atualizar imóvel')
     }
   }
 
@@ -222,7 +301,8 @@ export default function AdminDashboard() {
             <nav className="-mb-px flex space-x-8">
               {[
                 { id: 'overview', name: 'Visão Geral', icon: TrendingUp },
-                { id: 'properties', name: 'Imóveis', icon: Home },
+                { id: 'client-properties', name: 'Imóveis de Clientes', icon: UserCheck },
+                { id: 'admin-properties', name: 'Imóveis das Corretoras', icon: Building },
                 { id: 'users', name: 'Usuários', icon: Users }
               ].map((tab) => (
                 <button
@@ -522,10 +602,11 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {activeTab === 'properties' && (
+          {activeTab === 'client-properties' && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Gerenciar Imóveis</h3>
+                <h3 className="text-lg font-medium text-gray-900">Imóveis de Clientes</h3>
+                <p className="text-sm text-gray-600 mt-1">Imóveis enviados pelos clientes para cadastro</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -536,9 +617,6 @@ export default function AdminDashboard() {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Cliente
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Corretor
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
@@ -552,7 +630,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {properties.map((property) => (
+                    {properties.filter(p => p.submittedBy && p.submittedBy.role !== 'admin' && p.status !== 'rejeitado').map((property) => (
                       <tr key={property._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -565,22 +643,12 @@ export default function AdminDashboard() {
                           <div className="text-sm text-gray-500">{property.submittedBy.email}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {property.corretor?.name || 'Não definido'}
-                          </div>
-                          {property.corretor?.whatsapp && (
-                            <div className="text-sm text-gray-500">
-                              {property.corretor.whatsapp}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             property.status === 'ativo' 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {property.status === 'ativo' ? 'Ativo' : 'Pendente'}
+                            {property.status === 'ativo' ? 'Aprovado' : 'Aguardando'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -607,6 +675,79 @@ export default function AdminDashboard() {
                               </>
                             )}
                             <button
+                              onClick={() => handleViewDetails(property._id)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {properties.filter(p => p.submittedBy && p.submittedBy.role !== 'admin' && p.status !== 'rejeitado').length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhum imóvel de cliente
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'admin-properties' && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Imóveis das Corretoras</h3>
+                <p className="text-sm text-gray-600 mt-1">Imóveis cadastrados diretamente pelas corretoras</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Imóvel
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Enviado por
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Preço
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {properties.filter(p => p.submittedBy?.role === 'admin' || (p.status === 'ativo' && !p.submittedBy?.role)).map((property) => (
+                      <tr key={property._id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{property.title}</div>
+                            <div className="text-sm text-gray-500">{property.neighborhood}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{property.submittedBy.name}</div>
+                          <div className="text-sm text-gray-500">{property.submittedBy.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                            Ativo
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          R$ {property.price.toLocaleString('pt-BR')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+
+                            <button
                               onClick={() => handleHighlight(property._id, !property.isHighlighted)}
                               className={`${property.isHighlighted ? 'text-yellow-600' : 'text-gray-400'} hover:text-yellow-600`}
                               title={property.isHighlighted ? 'Remover destaque' : 'Destacar'}
@@ -614,8 +755,15 @@ export default function AdminDashboard() {
                               <Star className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => router.push(`/admin/editar-imovel/${property._id}`)}
+                              onClick={() => handleViewDetails(property._id)}
                               className="text-blue-600 hover:text-blue-900"
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditProperty(property._id)}
+                              className="text-gray-600 hover:text-gray-900"
                               title="Editar"
                             >
                               <Edit className="h-4 w-4" />
@@ -633,6 +781,11 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
+                {properties.filter(p => p.submittedBy?.role === 'admin' || (p.status === 'ativo' && !p.submittedBy?.role)).length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhum imóvel das corretoras
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -697,16 +850,26 @@ export default function AdminDashboard() {
                           }
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => handleUserStatus(user._id, !user.isActive)}
-                            className={`${
-                              user.isActive 
-                                ? 'text-red-600 hover:text-red-900' 
-                                : 'text-green-600 hover:text-green-900'
-                            }`}
-                          >
-                            {user.isActive ? 'Desativar' : 'Ativar'}
-                          </button>
+                          <div className="flex items-center space-x-4">
+                            <button
+                              onClick={() => handleUserStatus(user._id, !user.isActive)}
+                              className={`px-3 py-1 rounded text-xs font-medium ${
+                                user.isActive 
+                                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
+                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
+                              }`}
+                              title={user.isActive ? 'Desativar usuário temporariamente' : 'Ativar usuário'}
+                            >
+                              {user.isActive ? 'Desativar' : 'Ativar'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user._id, user.name)}
+                              className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded"
+                              title="Excluir usuário permanentemente"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -717,6 +880,371 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Modal de Detalhes do Imóvel */}
+      {showPropertyDetails && selectedProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header do Modal */}
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Detalhes do Imóvel</h2>
+              <button
+                onClick={() => setShowPropertyDetails(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Conteúdo do Modal */}
+            <div className="px-6 py-4 space-y-6">
+              {/* Informações Básicas */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Informações Básicas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Título:</span>
+                    <p className="text-gray-900">{selectedProperty.title}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Finalidade:</span>
+                    <p className="text-gray-900 capitalize">{selectedProperty.purpose}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Preço:</span>
+                    <p className="text-gray-900">R$ {selectedProperty.price.toLocaleString('pt-BR')}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Bairro:</span>
+                    <p className="text-gray-900">{selectedProperty.neighborhood}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Quartos:</span>
+                    <p className="text-gray-900">{selectedProperty.bedrooms}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Banheiros:</span>
+                    <p className="text-gray-900">{selectedProperty.bathrooms}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Vagas:</span>
+                    <p className="text-gray-900">{selectedProperty.parkingSpaces}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Área Total:</span>
+                    <p className="text-gray-900">{selectedProperty.totalArea} m²</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Endereço */}
+              {selectedProperty.address && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Endereço</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-gray-900">
+                      {selectedProperty.address.street}, {selectedProperty.address.number}
+                      {selectedProperty.address.complement && `, ${selectedProperty.address.complement}`}
+                    </p>
+                    <p className="text-gray-900">
+                      {selectedProperty.address.city} - {selectedProperty.address.state}
+                      {selectedProperty.address.zipCode && ` | CEP: ${selectedProperty.address.zipCode}`}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Descrição */}
+              {selectedProperty.longDescription && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Descrição</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-gray-900 whitespace-pre-wrap">{selectedProperty.longDescription}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Detalhes */}
+              {selectedProperty.details && selectedProperty.details.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Detalhes</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <ul className="list-disc list-inside space-y-1">
+                      {selectedProperty.details.map((detail, index) => (
+                        <li key={index} className="text-gray-900">{detail}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Características */}
+              {selectedProperty.features && selectedProperty.features.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Características Especiais</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <ul className="list-disc list-inside space-y-1">
+                      {selectedProperty.features.map((feature, index) => (
+                        <li key={index} className="text-gray-900">{feature}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Corretor */}
+              {selectedProperty.corretor && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Corretor Responsável</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Nome:</span>
+                        <p className="text-gray-900">{selectedProperty.corretor.name}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">WhatsApp:</span>
+                        <p className="text-gray-900">{selectedProperty.corretor.whatsapp}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Email:</span>
+                        <p className="text-gray-900">{selectedProperty.corretor.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Informações do Envio */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Informações do Envio</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Enviado por:</span>
+                      <p className="text-gray-900">{selectedProperty.submittedBy.name}</p>
+                      <p className="text-gray-600 text-sm">{selectedProperty.submittedBy.email}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Data de Envio:</span>
+                      <p className="text-gray-900">
+                        {new Date(selectedProperty.createdAt).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Imagens */}
+              {selectedProperty.images && selectedProperty.images.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Imagens</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {selectedProperty.images.map((image, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={image.url}
+                          alt={`Imagem ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                        {image.isMain && (
+                          <div className="absolute top-2 left-2 bg-primary-600 text-white text-xs px-2 py-1 rounded">
+                            Principal
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer do Modal */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowPropertyDetails(false)}
+                className="btn-secondary"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição do Imóvel */}
+      {showEditPropertyForm && editingProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header do Modal */}
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Editar Imóvel</h2>
+              <button
+                onClick={() => setShowEditPropertyForm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Formulário de Edição */}
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const formData = new FormData(e.currentTarget)
+              const updatedData = {
+                title: formData.get('title'),
+                price: Number(formData.get('price')),
+                neighborhood: formData.get('neighborhood'),
+                bedrooms: Number(formData.get('bedrooms')),
+                bathrooms: Number(formData.get('bathrooms')),
+                parkingSpaces: Number(formData.get('parkingSpaces')),
+                totalArea: Number(formData.get('totalArea')),
+                longDescription: formData.get('longDescription'),
+                purpose: formData.get('purpose')
+              }
+              handleUpdateProperty(updatedData)
+            }}>
+              <div className="px-6 py-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Título *
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      defaultValue={editingProperty.title}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Finalidade *
+                    </label>
+                    <select
+                      name="purpose"
+                      defaultValue={editingProperty.purpose}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="venda">Venda</option>
+                      <option value="aluguel">Aluguel</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preço *
+                    </label>
+                    <input
+                      type="number"
+                      name="price"
+                      defaultValue={editingProperty.price}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bairro *
+                    </label>
+                    <input
+                      type="text"
+                      name="neighborhood"
+                      defaultValue={editingProperty.neighborhood}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Quartos
+                    </label>
+                    <input
+                      type="number"
+                      name="bedrooms"
+                      defaultValue={editingProperty.bedrooms}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Banheiros
+                    </label>
+                    <input
+                      type="number"
+                      name="bathrooms"
+                      defaultValue={editingProperty.bathrooms}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Vagas
+                    </label>
+                    <input
+                      type="number"
+                      name="parkingSpaces"
+                      defaultValue={editingProperty.parkingSpaces}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Área Total (m²)
+                    </label>
+                    <input
+                      type="number"
+                      name="totalArea"
+                      defaultValue={editingProperty.totalArea}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição
+                  </label>
+                  <textarea
+                    name="longDescription"
+                    defaultValue={editingProperty.longDescription}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              {/* Footer do Modal */}
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditPropertyForm(false)}
+                  className="btn-secondary"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       
       <Footer />
     </div>

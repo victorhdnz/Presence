@@ -195,4 +195,28 @@ router.patch('/users/:userId/promote', authenticateToken, requireAdmin, async (r
     }
 });
 
+// ROTA ADMIN: Excluir usuário
+router.delete('/users/:userId', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        // Verificar se o usuário não está tentando excluir a si mesmo
+        if (req.params.userId === req.user._id.toString()) {
+            return res.status(400).json({ message: 'Não é possível excluir sua própria conta' });
+        }
+
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuário não encontrado' });
+        }
+
+        await User.findByIdAndDelete(req.params.userId);
+
+        res.json({
+            message: 'Usuário excluído com sucesso!'
+        });
+    } catch (error) {
+        console.error('Erro ao excluir usuário:', error);
+        res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+});
+
 module.exports = router;

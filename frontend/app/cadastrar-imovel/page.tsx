@@ -33,6 +33,16 @@ interface PropertyForm {
   longDescription: string
   details: string[]
   features: string[]
+  corretor: {
+    name: string
+    whatsapp: string
+    email: string
+  }
+  images: Array<{
+    url: string
+    file?: File
+    isMain: boolean
+  }>
 }
 
 export default function CadastrarImovelPage() {
@@ -60,7 +70,13 @@ export default function CadastrarImovelPage() {
     totalArea: 0,
     longDescription: '',
     details: [''],
-    features: ['']
+    features: [''],
+    corretor: {
+      name: 'Helo',
+      whatsapp: '(34) 99999-9999',
+      email: 'helo@presence.com'
+    },
+    images: []
   })
 
   // Capturar o caminho anterior quando a página carrega
@@ -199,6 +215,45 @@ export default function CadastrarImovelPage() {
     }))
   }
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const url = event.target?.result as string
+          setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, {
+              url,
+              file,
+              isMain: prev.images.length === 0
+            }]
+          }))
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }))
+  }
+
+  const setMainImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => ({
+        ...img,
+        isMain: i === index
+      }))
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -210,11 +265,30 @@ export default function CadastrarImovelPage() {
     try {
       setIsLoading(true)
       
+      // Upload das imagens primeiro
+      const uploadedImages = []
+      for (const image of formData.images) {
+        if (image.file) {
+          const formDataImage = new FormData()
+          formDataImage.append('image', image.file)
+          
+          const response = await api.post('/upload/images', formDataImage, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+          
+          uploadedImages.push({
+            url: response.data.url,
+            isMain: image.isMain
+          })
+        }
+      }
+      
       // Filtrar arrays vazios
       const cleanFormData = {
         ...formData,
         details: formData.details.filter(d => d.trim() !== ''),
-        features: formData.features.filter(f => f.trim() !== '')
+        features: formData.features.filter(f => f.trim() !== ''),
+        images: uploadedImages
       }
 
       await api.post('/properties/submit', cleanFormData)
@@ -584,6 +658,91 @@ export default function CadastrarImovelPage() {
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Característica
                 </button>
+              </div>
+
+              {/* Upload de Imagens */}
+              <div className="form-section">
+                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <Upload className="h-5 w-5 mr-2" />
+                  Fotos do Imóvel
+                </h3>
+                
+                <div className="space-y-4">
+                  {/* Área de Upload */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      id="images"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="images"
+                      className="cursor-pointer flex flex-col items-center space-y-2"
+                    >
+                      <Upload className="h-8 w-8 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        Clique para adicionar fotos ou arraste aqui
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        PNG, JPG, JPEG até 10MB cada
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Preview das Imagens */}
+                  {formData.images.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {formData.images.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={image.url}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border"
+                          />
+                          
+                          {/* Badge de Foto Principal */}
+                          {image.isMain && (
+                            <div className="absolute top-2 left-2 bg-primary-600 text-white text-xs px-2 py-1 rounded">
+                              Principal
+                            </div>
+                          )}
+                          
+                          {/* Botões de Ação */}
+                          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
+                            {!image.isMain && (
+                              <button
+                                type="button"
+                                onClick={() => setMainImage(index)}
+                                className="bg-blue-600 text-white p-2 rounded text-xs hover:bg-blue-700"
+                                title="Definir como principal"
+                              >
+                                <Star className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="bg-red-600 text-white p-2 rounded text-xs hover:bg-red-700"
+                              title="Remover imagem"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {formData.images.length > 0 && (
+                    <p className="text-sm text-gray-600">
+                      {formData.images.length} foto(s) selecionada(s). 
+                      {formData.images.find(img => img.isMain) ? ' A foto principal está marcada.' : ' Clique na estrela para definir a foto principal.'}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Botões */}

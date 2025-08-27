@@ -86,9 +86,11 @@ export default function Header() {
                     Dashboard
                   </Link>
                 )}
-                <Link href="/cadastrar-imovel" className="btn-secondary">
-                  Cadastrar Imóvel
-                </Link>
+                {user?.role !== 'admin' && (
+                  <Link href="/cadastrar-imovel" className="btn-secondary">
+                    Cadastrar Imóvel
+                  </Link>
+                )}
                 <div className="flex items-center space-x-2">
                   <User className="h-5 w-5 text-gray-600" />
                   <span className="text-gray-700">{user?.name}</span>
@@ -168,13 +170,15 @@ export default function Header() {
                       Dashboard
                     </Link>
                   )}
-                  <Link 
-                    href="/cadastrar-imovel" 
-                    className="block px-3 py-2 bg-gray-200 text-gray-800 rounded-md font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Cadastrar Imóvel
-                  </Link>
+                  {user?.role !== 'admin' && (
+                    <Link 
+                      href="/cadastrar-imovel" 
+                      className="block px-3 py-2 bg-gray-200 text-gray-800 rounded-md font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Cadastrar Imóvel
+                    </Link>
+                  )}
                   <div className="px-3 py-2 text-gray-700">
                     <div className="flex items-center space-x-2">
                       <User className="h-5 w-5 text-gray-600" />

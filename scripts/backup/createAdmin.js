@@ -8,12 +8,19 @@ const createAdminUser = async () => {
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/presence-imobiliaria');
         console.log('✅ Conectado ao MongoDB');
 
-        // Verificar se já existe um admin
-        const existingAdmin = await User.findOne({ role: 'admin' });
-        if (existingAdmin) {
-            console.log('⚠️  Já existe um usuário administrador');
-            console.log(`Nome: ${existingAdmin.name}`);
-            console.log(`E-mail: ${existingAdmin.email}`);
+        // Verificar se o usuário Victor Hugo existe
+        const existingUser = await User.findOne({ email: 'victorhugo10diniz@gmail.com' });
+        if (existingUser) {
+            // Atualizar para admin se não for
+            if (existingUser.role !== 'admin') {
+                existingUser.role = 'admin';
+                await existingUser.save();
+                console.log('✅ Usuário atualizado para administrador');
+            } else {
+                console.log('✅ Usuário já é administrador');
+            }
+            console.log(`Nome: ${existingUser.name}`);
+            console.log(`E-mail: ${existingUser.email}`);
             return;
         }
 
