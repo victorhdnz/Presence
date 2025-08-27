@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { api } from '@/lib/api'
 import {
   Home, MapPin, Car, Bed, Bath, DollarSign, Star,
-  Search, Filter, SlidersHorizontal, MessageCircle
+  Search, Filter, SlidersHorizontal, MessageCircle, X, Phone, Mail, Ruler
 } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -38,6 +37,9 @@ export default function ImoveisPage() {
   const [purposeFilter, setPurposeFilter] = useState<'todos' | 'venda' | 'aluguel'>('todos')
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
   const [showFilters, setShowFilters] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<any>(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
 
   useEffect(() => {
     fetchProperties()
@@ -91,6 +93,19 @@ export default function ImoveisPage() {
     setSearchTerm('')
     setPurposeFilter('todos')
     setPriceRange({ min: '', max: '' })
+  }
+
+  const handleViewDetails = async (propertyId: string) => {
+    try {
+      setIsLoadingDetails(true)
+      const response = await api.get(`/properties/${propertyId}`)
+      setSelectedProperty(response.data)
+      setShowDetailsModal(true)
+    } catch (error) {
+      console.error('Erro ao buscar detalhes:', error)
+    } finally {
+      setIsLoadingDetails(false)
+    }
   }
 
   if (isLoading) {
@@ -307,32 +322,181 @@ export default function ImoveisPage() {
                       </div>
                     )}
 
-                    {/* Botões */}
-                    <div className="space-y-2">
-                      <Link
-                        href={`/imovel?id=${property._id}`}
-                        className="w-full btn-primary text-center block text-sm sm:text-base py-2 sm:py-3"
-                      >
-                        Ver Detalhes
-                      </Link>
-                      
-                      <button
-                        onClick={() => handleWhatsAppContact(property)}
-                        className="w-full btn-secondary flex items-center justify-center space-x-2 text-sm sm:text-base py-2 sm:py-3"
-                      >
-                        <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span>Entre em Contato</span>
-                      </button>
-                    </div>
+                                         {/* Botões */}
+                     <div className="space-y-2">
+                       <button
+                         onClick={() => handleViewDetails(property._id)}
+                         className="w-full btn-primary text-center block text-sm sm:text-base py-2 sm:py-3"
+                       >
+                         Ver Detalhes
+                       </button>
+                       
+                       <button
+                         onClick={() => handleWhatsAppContact(property)}
+                         className="w-full btn-secondary flex items-center justify-center space-x-2 text-sm sm:text-base py-2 sm:py-3"
+                       >
+                         <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                         <span>Entre em Contato</span>
+                       </button>
+                     </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
-      </div>
-      
-      <Footer />
-    </div>
-  )
-}
+                 </div>
+       </div>
+
+       {/* Modal de Detalhes */}
+       {showDetailsModal && selectedProperty && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+             {/* Header do Modal */}
+             <div className="flex items-center justify-between p-6 border-b">
+               <h2 className="text-2xl font-bold text-gray-900">Detalhes do Imóvel</h2>
+               <button
+                 onClick={() => setShowDetailsModal(false)}
+                 className="text-gray-400 hover:text-gray-600"
+               >
+                 <X className="h-6 w-6" />
+               </button>
+             </div>
+
+             {/* Conteúdo do Modal */}
+             <div className="p-6">
+               {isLoadingDetails ? (
+                 <div className="text-center py-8">
+                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                   <p className="mt-4 text-gray-600">Carregando detalhes...</p>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   {/* Imagens */}
+                   <div className="space-y-4">
+                     <div className="relative">
+                       {selectedProperty.images && selectedProperty.images.length > 0 ? (
+                         <img
+                           src={selectedProperty.images.find((img: any) => img.isMain)?.url || selectedProperty.images[0].url}
+                           alt={selectedProperty.title}
+                           className="w-full h-80 object-cover rounded-lg shadow-lg"
+                         />
+                       ) : (
+                         <div className="w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center">
+                           <p className="text-gray-500">Sem imagem</p>
+                         </div>
+                       )}
+                       
+                       {selectedProperty.isHighlighted && (
+                         <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-semibold flex items-center">
+                           <Star className="h-4 w-4 mr-1" />
+                           Destaque
+                         </div>
+                       )}
+                       
+                       <div className="absolute top-4 right-4 bg-white text-gray-900 px-3 py-1 rounded-full text-sm font-semibold">
+                         {selectedProperty.purpose === 'venda' ? 'Venda' : 'Aluguel'}
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Informações */}
+                   <div className="space-y-6">
+                     {/* Título e preço */}
+                     <div>
+                       <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedProperty.title}</h1>
+                       <p className="text-2xl font-bold text-primary-600 mb-2">
+                         {formatPrice(selectedProperty.price)}
+                       </p>
+                       <p className="text-gray-600 flex items-center">
+                         <MapPin className="h-5 w-5 mr-2" />
+                         {selectedProperty.neighborhood}
+                       </p>
+                     </div>
+
+                     {/* Características principais */}
+                     <div className="grid grid-cols-3 gap-4">
+                       <div className="text-center p-4 bg-gray-50 rounded-lg">
+                         <Bed className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+                         <p className="text-sm text-gray-600">Quartos</p>
+                         <p className="text-xl font-semibold text-gray-900">{selectedProperty.bedrooms}</p>
+                       </div>
+                       <div className="text-center p-4 bg-gray-50 rounded-lg">
+                         <Bath className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+                         <p className="text-sm text-gray-600">Banheiros</p>
+                         <p className="text-xl font-semibold text-gray-900">{selectedProperty.bathrooms}</p>
+                       </div>
+                       <div className="text-center p-4 bg-gray-50 rounded-lg">
+                         <Car className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+                         <p className="text-sm text-gray-600">Vagas</p>
+                         <p className="text-xl font-semibold text-gray-900">{selectedProperty.parkingSpaces}</p>
+                       </div>
+                     </div>
+
+                     {/* Área */}
+                     {selectedProperty.totalArea && (
+                       <div className="bg-gray-50 p-4 rounded-lg">
+                         <div className="flex items-center justify-between">
+                           <div className="flex items-center">
+                             <Ruler className="h-5 w-5 text-primary-600 mr-2" />
+                             <span className="text-gray-600">Área Total:</span>
+                           </div>
+                           <span className="font-semibold text-gray-900">{selectedProperty.totalArea}m²</span>
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Descrição */}
+                     {selectedProperty.longDescription && (
+                       <div className="bg-gray-50 p-4 rounded-lg">
+                         <h3 className="font-semibold text-gray-900 mb-2">Descrição</h3>
+                         <p className="text-gray-600 leading-relaxed">{selectedProperty.longDescription}</p>
+                       </div>
+                     )}
+
+                     {/* Corretor */}
+                     {selectedProperty.corretor && (
+                       <div className="bg-gray-50 p-4 rounded-lg">
+                         <h3 className="font-semibold text-gray-900 mb-3">Corretor Responsável</h3>
+                         <div className="space-y-2">
+                           <p className="text-gray-900 font-medium">{selectedProperty.corretor.name}</p>
+                           {selectedProperty.corretor.whatsapp && (
+                             <div className="flex items-center text-gray-600">
+                               <Phone className="h-4 w-4 mr-2" />
+                               <a href={`https://wa.me/${selectedProperty.corretor.whatsapp}`} className="hover:text-primary-600">
+                                 {selectedProperty.corretor.whatsapp}
+                               </a>
+                             </div>
+                           )}
+                           {selectedProperty.corretor.email && (
+                             <div className="flex items-center text-gray-600">
+                               <Mail className="h-4 w-4 mr-2" />
+                               <a href={`mailto:${selectedProperty.corretor.email}`} className="hover:text-primary-600">
+                                 {selectedProperty.corretor.email}
+                               </a>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               )}
+             </div>
+
+             {/* Footer do Modal */}
+             <div className="flex justify-end p-6 border-t bg-gray-50">
+               <button
+                 onClick={() => setShowDetailsModal(false)}
+                 className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+               >
+                 Fechar
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+       
+       <Footer />
+     </div>
+   )
+ }
