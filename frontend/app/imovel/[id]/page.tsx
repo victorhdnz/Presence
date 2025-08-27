@@ -23,12 +23,7 @@ interface Property {
     isMain: boolean
   }>
   longDescription: string
-  details: {
-    type: string
-    age: string
-    condition: string
-    features: string[]
-  }
+  details: string[]
   features: string[]
   status: string
   isHighlighted: boolean
@@ -39,8 +34,6 @@ interface Property {
   }
   createdAt: string
 }
-
-
 
 export default function PropertyDetails() {
   const params = useParams()
@@ -188,7 +181,7 @@ export default function PropertyDetails() {
               </p>
               <p className="text-gray-600 flex items-center">
                 <MapPin className="h-5 w-5 mr-2" />
-                {property.neighborhood}, {property.address}
+                {property.neighborhood}{property.address && `, ${property.address}`}
               </p>
             </div>
 
@@ -237,28 +230,18 @@ export default function PropertyDetails() {
             )}
 
             {/* Detalhes */}
-            {property.details && (
+            {property.details && property.details.length > 0 && (
               <div className="bg-white p-4 rounded-lg border">
                 <h3 className="font-semibold text-gray-900 mb-3">Detalhes</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {property.details.type && (
-                    <div>
-                      <span className="text-gray-600">Tipo:</span>
-                      <span className="ml-2 font-medium">{property.details.type}</span>
-                    </div>
-                  )}
-                  {property.details.age && (
-                    <div>
-                      <span className="text-gray-600">Idade:</span>
-                      <span className="ml-2 font-medium">{property.details.age}</span>
-                    </div>
-                  )}
-                  {property.details.condition && (
-                    <div>
-                      <span className="text-gray-600">Estado:</span>
-                      <span className="ml-2 font-medium">{property.details.condition}</span>
-                    </div>
-                  )}
+                <div className="flex flex-wrap gap-2">
+                  {property.details.map((detail, index) => (
+                    <span
+                      key={index}
+                      className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      {detail}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
