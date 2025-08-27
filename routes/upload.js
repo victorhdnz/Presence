@@ -1,8 +1,17 @@
 const express = require('express');
-const { upload, cloudinary } = require('../config/cloudinary');
+const { upload } = require('../services/cloudinaryService');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
+
+// ROTA DE TESTE: Verificar se o serviço de upload está funcionando
+router.get('/test', (req, res) => {
+    res.json({ 
+        message: 'Serviço de upload funcionando!', 
+        cloudinaryConfigured: !!process.env.CLOUDINARY_CLOUD_NAME 
+    });
+});
 
 // ROTA PROTEGIDA: Upload de imagens (apenas admins)
 router.post('/images', authenticateToken, requireAdmin, upload.array('images', 10), async (req, res) => {
