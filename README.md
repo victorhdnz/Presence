@@ -41,7 +41,7 @@ npm install
 No Render, configure as seguintes variáveis:
 
 ```env
-MONGODB_URI=mongodb+srv://victorhugo10diniz:tKYnRy831oZ087b6@cluster0.pzo1ugq.mongodb.net/presence-imobiliaria?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_URI=sua_string_de_conexao_mongodb_aqui
 JWT_SECRET=sua_chave_secreta_muito_segura_aqui
 EMAIL_USER=seu-email@gmail.com
 EMAIL_PASS=sua-senha-app-gmail
