@@ -1,27 +1,29 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { MapPin, Bed, Bath, Car, Ruler, Phone, Mail, ArrowLeft, Star } from 'lucide-react'
 import { api } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
 export default function PropertyDetails() {
-  const params = useParams()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const [property, setProperty] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  const propertyId = searchParams.get('id')
+
   useEffect(() => {
-    if (params.id) {
+    if (propertyId) {
       fetchProperty()
     }
-  }, [params.id])
+  }, [propertyId])
 
   const fetchProperty = async () => {
     try {
       setLoading(true)
-      const response = await api.get(`/properties/${params.id}`)
+      const response = await api.get(`/properties/${propertyId}`)
       setProperty(response.data)
     } catch (error) {
       toast.error('Erro ao carregar detalhes do imóvel')
@@ -36,6 +38,22 @@ export default function PropertyDetails() {
       style: 'currency',
       currency: 'BRL'
     }).format(price)
+  }
+
+  if (!propertyId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">ID do imóvel não fornecido</h1>
+          <button
+            onClick={() => router.back()}
+            className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
+          >
+            Voltar
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {

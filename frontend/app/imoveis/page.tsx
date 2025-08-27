@@ -310,7 +310,7 @@ export default function ImoveisPage() {
                     {/* Botões */}
                     <div className="space-y-2">
                       <Link
-                        href={`/imovel/${property._id}`}
+                        href={`/imovel?id=${property._id}`}
                         className="w-full btn-primary text-center block text-sm sm:text-base py-2 sm:py-3"
                       >
                         Ver Detalhes
