@@ -9,7 +9,7 @@ const router = express.Router();
 // ROTA PÚBLICA: Registrar um novo usuário
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const { name, email, password, phone, role } = req.body;
 
         // Verificar se o usuário já existe
         const existingUser = await User.findOne({ email });
@@ -17,13 +17,13 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'E-mail já cadastrado' });
         }
 
-        // Criar novo usuário
+        // Criar novo usuário (aceita role do body ou usa 'client' como padrão)
         const user = new User({
             name,
             email,
             password,
             phone,
-            role: 'client' // Sempre cria como cliente
+            role: role || 'client' // Aceita role do body ou usa 'client' como padrão
         });
 
         await user.save();
