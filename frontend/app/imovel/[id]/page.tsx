@@ -2,45 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Building2, Home, MapPin, DollarSign, Bed, Bath, Car, Ruler, Phone, Mail, ArrowLeft, Star } from 'lucide-react'
+import { MapPin, Bed, Bath, Car, Ruler, Phone, Mail, ArrowLeft, Star } from 'lucide-react'
 import { api } from '@/lib/api'
 import { toast } from 'react-hot-toast'
-
-interface Property {
-  _id: string
-  title: string
-  purpose: 'venda' | 'aluguel'
-  price: number
-  neighborhood: string
-  address: string
-  bedrooms: number
-  bathrooms: number
-  parkingSpaces: number
-  landSize?: number
-  totalArea: number
-  images: Array<{
-    url: string
-    isMain: boolean
-  }>
-  longDescription: string
-  details: string[]
-  features: string[]
-  status: string
-  isHighlighted: boolean
-  corretor: {
-    name: string
-    whatsapp: string
-    email: string
-  }
-  createdAt: string
-}
 
 export default function PropertyDetails() {
   const params = useParams()
   const router = useRouter()
-  const [property, setProperty] = useState<Property | null>(null)
+  const [property, setProperty] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [mainImageIndex, setMainImageIndex] = useState(0)
 
   useEffect(() => {
     if (params.id) {
@@ -53,10 +23,6 @@ export default function PropertyDetails() {
       setLoading(true)
       const response = await api.get(`/properties/${params.id}`)
       setProperty(response.data)
-      
-      // Encontrar índice da imagem principal
-      const mainImageIndex = response.data.images.findIndex((img: any) => img.isMain)
-      setMainImageIndex(mainImageIndex >= 0 ? mainImageIndex : 0)
     } catch (error) {
       toast.error('Erro ao carregar detalhes do imóvel')
       console.error('Erro:', error)
@@ -70,10 +36,6 @@ export default function PropertyDetails() {
       style: 'currency',
       currency: 'BRL'
     }).format(price)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
   }
 
   if (loading) {
@@ -128,47 +90,29 @@ export default function PropertyDetails() {
           <div className="space-y-4">
             {/* Imagem principal */}
             <div className="relative">
-              <img
-                src={property.images[mainImageIndex]?.url || '/placeholder-property.jpg'}
-                alt={property.title}
-                className="w-full h-96 object-cover rounded-lg shadow-lg"
-              />
+              {property.images && property.images.length > 0 ? (
+                <img
+                  src={property.images.find((img: any) => img.isMain)?.url || property.images[0].url}
+                  alt={property.title}
+                  className="w-full h-96 object-cover rounded-lg shadow-lg"
+                />
+              ) : (
+                <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500">Sem imagem</p>
+                </div>
+              )}
+              
               {property.isHighlighted && (
                 <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-semibold flex items-center">
                   <Star className="h-4 w-4 mr-1" />
                   Destaque
                 </div>
               )}
+              
               <div className="absolute top-4 right-4 bg-white text-gray-900 px-3 py-1 rounded-full text-sm font-semibold">
                 {property.purpose === 'venda' ? 'Venda' : 'Aluguel'}
               </div>
             </div>
-
-            {/* Miniaturas */}
-            {property.images.length > 1 && (
-              <div className="grid grid-cols-5 gap-2">
-                {property.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setMainImageIndex(index)}
-                    className={`relative overflow-hidden rounded-lg ${
-                      index === mainImageIndex ? 'ring-2 ring-primary-500' : ''
-                    }`}
-                  >
-                    <img
-                      src={image.url}
-                      alt={`${property.title} - Imagem ${index + 1}`}
-                      className="w-full h-20 object-cover"
-                    />
-                    {image.isMain && (
-                      <div className="absolute top-1 right-1 bg-primary-600 text-white rounded-full p-1">
-                        <Star className="h-3 w-3" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Informações */}
@@ -181,7 +125,7 @@ export default function PropertyDetails() {
               </p>
               <p className="text-gray-600 flex items-center">
                 <MapPin className="h-5 w-5 mr-2" />
-                {property.neighborhood}{property.address && `, ${property.address}`}
+                {property.neighborhood}
               </p>
             </div>
 
@@ -213,12 +157,6 @@ export default function PropertyDetails() {
                 </div>
                 <span className="font-semibold text-gray-900">{property.totalArea}m²</span>
               </div>
-              {property.landSize && (
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-gray-600">Área do Terreno:</span>
-                  <span className="font-semibold text-gray-900">{property.landSize}m²</span>
-                </div>
-              )}
             </div>
 
             {/* Descrição */}
@@ -229,64 +167,31 @@ export default function PropertyDetails() {
               </div>
             )}
 
-            {/* Detalhes */}
-            {property.details && property.details.length > 0 && (
-              <div className="bg-white p-4 rounded-lg border">
-                <h3 className="font-semibold text-gray-900 mb-3">Detalhes</h3>
-                <div className="flex flex-wrap gap-2">
-                  {property.details.map((detail, index) => (
-                    <span
-                      key={index}
-                      className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm"
-                    >
-                      {detail}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Características */}
-            {property.features && property.features.length > 0 && (
-              <div className="bg-white p-4 rounded-lg border">
-                <h3 className="font-semibold text-gray-900 mb-3">Características</h3>
-                <div className="flex flex-wrap gap-2">
-                  {property.features.map((feature, index) => (
-                    <span
-                      key={index}
-                      className="bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm"
-                    >
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Corretor */}
-            <div className="bg-white p-4 rounded-lg border">
-              <h3 className="font-semibold text-gray-900 mb-3">Corretor Responsável</h3>
-              <div className="space-y-2">
-                <p className="text-gray-900 font-medium">{property.corretor.name}</p>
-                <div className="flex items-center text-gray-600">
-                  <Phone className="h-4 w-4 mr-2" />
-                  <a href={`https://wa.me/${property.corretor.whatsapp}`} className="hover:text-primary-600">
-                    {property.corretor.whatsapp}
-                  </a>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Mail className="h-4 w-4 mr-2" />
-                  <a href={`mailto:${property.corretor.email}`} className="hover:text-primary-600">
-                    {property.corretor.email}
-                  </a>
+            {property.corretor && (
+              <div className="bg-white p-4 rounded-lg border">
+                <h3 className="font-semibold text-gray-900 mb-3">Corretor Responsável</h3>
+                <div className="space-y-2">
+                  <p className="text-gray-900 font-medium">{property.corretor.name}</p>
+                  {property.corretor.whatsapp && (
+                    <div className="flex items-center text-gray-600">
+                      <Phone className="h-4 w-4 mr-2" />
+                      <a href={`https://wa.me/${property.corretor.whatsapp}`} className="hover:text-primary-600">
+                        {property.corretor.whatsapp}
+                      </a>
+                    </div>
+                  )}
+                  {property.corretor.email && (
+                    <div className="flex items-center text-gray-600">
+                      <Mail className="h-4 w-4 mr-2" />
+                      <a href={`mailto:${property.corretor.email}`} className="hover:text-primary-600">
+                        {property.corretor.email}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Data de criação */}
-            <div className="text-sm text-gray-500 text-center">
-              Anúncio criado em {formatDate(property.createdAt)}
-            </div>
+            )}
           </div>
         </div>
       </div>
