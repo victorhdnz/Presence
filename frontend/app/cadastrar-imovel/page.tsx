@@ -145,7 +145,7 @@ export default function CadastrarImovelPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof PropertyForm],
+          ...(prev[parent as keyof PropertyForm] as any),
           [child]: value
         }
       }))
@@ -166,7 +166,7 @@ export default function CadastrarImovelPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof PropertyForm],
+          ...(prev[parent as keyof PropertyForm] as any),
           [child]: numValue
         }
       }))

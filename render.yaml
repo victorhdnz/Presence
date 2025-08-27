@@ -25,12 +25,14 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
 
-  # Frontend (Static Site)
+  # Frontend (Next.js App)
   - type: web
     name: Presence-imobiliaria
-    env: static
+    env: node
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/out
+    startCommand: cd frontend && npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://presence-imobiliaria-api.onrender.com
+      - key: NODE_ENV
+        value: production
