@@ -50,7 +50,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // ROTA PROTEGIDA: Cliente cadastrar imóvel
-router.post('/submit', requireAuth, async (req, res) => {
+router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
     try {
         const {
             title, purpose, price, neighborhood, address,
