@@ -147,7 +147,7 @@ function AdminPage() {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('presence_token')
       if (!token) {
         router.push('/login')
         return
