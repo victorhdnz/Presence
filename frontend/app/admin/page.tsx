@@ -927,7 +927,7 @@ function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {adminProperties.slice(0, 5).map((property) => (
+                    {activeProperties.slice(0, 5).map((property) => (
                       <tr key={property._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
