@@ -1,0 +1,20 @@
+[33mfdd7885[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat: atualizar dados das corretoras, endereço e criar página de financiamento
+[33m87d2afd[m fix: mostrar imóveis aprovados de clientes na visão geral
+[33m5c1ac63[m feat: adicionar detalhes/características nos modais e corrigir enum de status
+[33m7ec40b4[m fix: corrigir crash no dashboard com verificações de segurança e loading
+[33md4fd389[m fix: corrigir filtragem de imóveis e erro na criação de propriedades
+[33m540975a[m fix: corrigir chave do token no localStorage para dashboard admin
+[33m3407da3[m fix: corrigir rotas da API de usuários
+[33m01d4a32[m fix: remover fallback localhost do api.ts para usar variáveis do Render
+[33m9b14575[m fix: remover env do next.config.js para usar variáveis do Render
+[33mdca1618[m fix: remover arquivo .env para usar variáveis do Render
+[33md6853b7[m fix: remover rotas problemáticas e implementar modal em PropertyGrid
+[33m6f1bf53[m Corrigindo
+[33m3271d96[m feat: implementar modal de detalhes completo para página de imóveis
+[33m3a938b6[m feat: adicionar logs de debug para investigar problema do modal
+[33m4a50ca9[m feat: implementar modal de detalhes na página de imóveis para evitar erro 404
+[33m29c505c[m fix: usar query parameters em vez de rotas dinâmicas para detalhes do imóvel
+[33m673599b[m fix: simplificar página de detalhes e remover script export
+[33meefe2f9[m fix: remover trailingSlash e testar roteamento dinâmico
+[33m5d40df6[m Corrigindo erro na preview de imagem e da página de detalhes
+[33m16dc1dc[m Corrigindo erro de deploy 2

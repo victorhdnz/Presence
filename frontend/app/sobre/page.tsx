@@ -139,16 +139,18 @@ export default function SobrePage() {
                 <p className="text-primary-600 font-medium mb-2 sm:mb-3 text-sm sm:text-base">Corretora Especialista</p>
                 <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
                   Especialista em imóveis residenciais de alto padrão, 
-                  com mais de 10 anos de experiência no mercado.
+                  com mais de 40 anos de experiência no mercado.
                 </p>
                 <div className="space-y-2 text-xs sm:text-sm">
                   <div className="flex items-center justify-center space-x-2">
                     <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
-                    <span className="text-gray-700">(34) 99999-9999</span>
+                    <a href="https://wa.me/553484008321" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700">
+                      +55 34 8400-8321
+                    </a>
                   </div>
                   <div className="flex items-center justify-center space-x-2">
                     <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
-                    <span className="text-gray-700 break-all">helo@presence.com.br</span>
+                    <span className="text-gray-700 break-all">consultoriapresence@gmail.com</span>
                   </div>
                 </div>
               </div>
@@ -163,16 +165,18 @@ export default function SobrePage() {
                 <p className="text-primary-600 font-medium mb-2 sm:mb-3 text-sm sm:text-base">Corretora Especialista</p>
                 <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
                   Especializada em investimentos imobiliários e 
-                  consultoria para clientes corporativos.
+                  consultoria para clientes corporativos, com mais de 40 anos de experiência.
                 </p>
                 <div className="space-y-2 text-xs sm:text-sm">
                   <div className="flex items-center justify-center space-x-2">
                     <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
-                    <span className="text-gray-700">(34) 88888-8888</span>
+                    <a href="https://wa.me/553496877060" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700">
+                      +55 34 9687-7060
+                    </a>
                   </div>
                   <div className="flex items-center justify-center space-x-2">
                     <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-primary-600" />
-                    <span className="text-gray-700 break-all">vania@presence.com.br</span>
+                    <span className="text-gray-700 break-all">consultoriapresence@gmail.com</span>
                   </div>
                 </div>
               </div>
@@ -196,7 +200,7 @@ export default function SobrePage() {
                   <div className="text-sm sm:text-base text-gray-600">Bairros Atendidos</div>
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl font-bold text-primary-600 mb-1 sm:mb-2">10+</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-primary-600 mb-1 sm:mb-2">40+</div>
                   <div className="text-sm sm:text-base text-gray-600">Anos de Experiência</div>
                 </div>
               </div>
@@ -216,15 +220,17 @@ export default function SobrePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-2xl mx-auto">
               <div className="flex items-center justify-center space-x-2 sm:space-x-3">
                 <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-                <span className="text-gray-700 text-sm sm:text-base">(34) 99999-9999</span>
+                <a href="https://wa.me/553484008321" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 text-sm sm:text-base">
+                  +55 34 8400-8321
+                </a>
               </div>
               <div className="flex items-center justify-center space-x-2 sm:space-x-3">
                 <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-                <span className="text-gray-700 text-sm sm:text-base break-all">contato@presence.com.br</span>
+                <span className="text-gray-700 text-sm sm:text-base break-all">consultoriapresence@gmail.com</span>
               </div>
               <div className="flex items-center justify-center space-x-2 sm:space-x-3">
                 <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-                <span className="text-gray-700 text-sm sm:text-base">Uberlândia, MG</span>
+                <span className="text-gray-700 text-sm sm:text-base">RUA IZAU RANGEL DE MENDONÇA, nº 920 - JARDIM FINOTTI</span>
               </div>
             </div>
           </div>

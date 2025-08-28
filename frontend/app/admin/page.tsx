@@ -12,9 +12,8 @@ import Footer from '@/components/Footer'
 
 // Dados das corretoras
 const CORRETORAS = [
-  { name: 'Presence Imobiliária', whatsapp: '(11) 99999-9999', email: 'contato@presence.com.br' },
-  { name: 'Imobiliária Central', whatsapp: '(11) 88888-8888', email: 'central@imobiliaria.com.br' },
-  { name: 'Corretora Premium', whatsapp: '(11) 77777-7777', email: 'premium@corretora.com.br' }
+  { name: 'Heloisa', whatsapp: '+55 34 8400-8321', email: 'consultoriapresence@gmail.com' },
+  { name: 'Vânia', whatsapp: '+55 34 9687-7060', email: 'consultoriapresence@gmail.com' }
 ]
 
 interface User {

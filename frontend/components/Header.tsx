@@ -75,6 +75,9 @@ export default function Header() {
             <Link href="/contato" className="text-gray-700 hover:text-primary-600 transition-colors">
               Contato
             </Link>
+            <Link href="/financiamento" className="text-gray-700 hover:text-primary-600 transition-colors">
+              Financiamento
+            </Link>
           </nav>
 
           {/* Auth Section - Desktop */}
@@ -155,6 +158,13 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Contato
+              </Link>
+              <Link 
+                href="/financiamento" 
+                className="block px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-gray-100 rounded-md transition-colors font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Financiamento
               </Link>
             </nav>
 

@@ -26,15 +26,42 @@ export default function Footer() {
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-start space-x-2 sm:space-x-3">
                 <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-300 text-sm sm:text-base">Uberlândia, MG</span>
+                <span className="text-gray-300 text-sm sm:text-base">
+                  RUA IZAU RANGEL DE MENDONÇA, nº 920 - JARDIM FINOTTI - UBERLÂNDIA / MG - CEP: 38408-136
+                </span>
               </div>
               <div className="flex items-start space-x-2 sm:space-x-3">
                 <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-300 text-sm sm:text-base">(34) 99999-9999</span>
+                <span className="text-gray-300 text-sm sm:text-base">CRECI: 21002/MG</span>
               </div>
               <div className="flex items-start space-x-2 sm:space-x-3">
                 <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-300 text-sm sm:text-base break-all">contato@presence.com.br</span>
+                <span className="text-gray-300 text-sm sm:text-base break-all">consultoriapresence@gmail.com</span>
+              </div>
+            </div>
+
+            {/* Corretoras */}
+            <div className="mt-4 sm:mt-6">
+              <h4 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Corretoras</h4>
+              <div className="space-y-2">
+                <a 
+                  href="https://wa.me/553484008321"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 text-primary-400 hover:text-primary-300 transition-colors duration-200"
+                >
+                  <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-gray-300 hover:text-white transition-colors duration-200">Heloisa: +55 34 8400-8321</span>
+                </a>
+                <a 
+                  href="https://wa.me/553496877060"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 text-primary-400 hover:text-primary-300 transition-colors duration-200"
+                >
+                  <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-gray-300 hover:text-white transition-colors duration-200">Vânia: +55 34 9687-7060</span>
+                </a>
               </div>
             </div>
 

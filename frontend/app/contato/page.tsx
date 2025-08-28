@@ -102,8 +102,8 @@ export default function ContatoPage() {
                       Endereço
                     </h3>
                     <p className="text-sm sm:text-base text-gray-600">
-                      Rua das Flores, 123 - Centro<br />
-                      Uberlândia, MG - 38400-123
+                      RUA IZAU RANGEL DE MENDONÇA, nº 920 - JARDIM FINOTTI<br />
+                      UBERLÂNDIA / MG - CEP: 38408-136
                     </p>
                   </div>
                 </div>
@@ -119,10 +119,16 @@ export default function ContatoPage() {
                     </h3>
                     <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
                       <div className="text-gray-600">
-                        <span className="font-medium">Helo:</span> (34) 99999-9999
+                        <span className="font-medium">Heloisa:</span> 
+                        <a href="https://wa.me/553484008321" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 ml-1">
+                          +55 34 8400-8321
+                        </a>
                       </div>
                       <div className="text-gray-600">
-                        <span className="font-medium">Vânia:</span> (34) 88888-8888
+                        <span className="font-medium">Vânia:</span> 
+                        <a href="https://wa.me/553496877060" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 ml-1">
+                          +55 34 9687-7060
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -139,13 +145,13 @@ export default function ContatoPage() {
                     </h3>
                     <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
                       <div className="text-gray-600">
-                        <span className="font-medium">Helo:</span> helo@presence.com.br
+                        <span className="font-medium">Heloisa:</span> consultoriapresence@gmail.com
                       </div>
                       <div className="text-gray-600">
-                        <span className="font-medium">Vânia:</span> vania@presence.com.br
+                        <span className="font-medium">Vânia:</span> consultoriapresence@gmail.com
                       </div>
                       <div className="text-gray-600">
-                        <span className="font-medium">Geral:</span> contato@presence.com.br
+                        <span className="font-medium">Geral:</span> consultoriapresence@gmail.com
                       </div>
                     </div>
                   </div>
@@ -161,9 +167,7 @@ export default function ContatoPage() {
                       Horário de Funcionamento
                     </h3>
                     <p className="text-sm sm:text-base text-gray-600">
-                      Segunda a Sexta: 8h às 18h<br />
-                      Sábado: 9h às 14h<br />
-                      Domingo: Fechado
+                      24 horas
                     </p>
                   </div>
                 </div>

@@ -13,9 +13,7 @@ const transporter = nodemailer.createTransport({
 
 // E-mails das corretoras
 const CORRETORAS_EMAILS = [
-    'victorhugo10diniz@gmail.com', // Email para teste - substitua pelos emails reais das corretoras
-    // 'helo@presence.com.br', 
-    // 'vania@presence.com.br'
+    'consultoriapresence@gmail.com'
 ];
 
 // Função para enviar notificação de login de cliente
