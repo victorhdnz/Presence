@@ -30,6 +30,8 @@ interface Property {
     totalArea?: number;
     images: Array<{ url: string; isMain: boolean }>;
     longDescription?: string;
+    details?: string[];
+    features?: string[];
     isHighlighted: boolean;
     corretor?: {
         name: string;
@@ -228,6 +230,12 @@ export default function PropertiesPage() {
                                         </div>
                                         {selectedProperty.longDescription && (
                                             <><h4 className="font-bold text-lg mb-2">Descrição</h4><p className="text-gray-600 mb-6">{selectedProperty.longDescription}</p></>
+                                        )}
+                                        {selectedProperty.details && selectedProperty.details.length > 0 && (
+                                            <><h4 className="font-bold text-lg mb-2">Detalhes Adicionais</h4><ul className="list-disc list-inside text-gray-600 mb-6 space-y-1">{selectedProperty.details.map((detail, index) => (<li key={index}>{detail}</li>))}</ul></>
+                                        )}
+                                        {selectedProperty.features && selectedProperty.features.length > 0 && (
+                                            <><h4 className="font-bold text-lg mb-2">Características Especiais</h4><ul className="list-disc list-inside text-gray-600 mb-6 space-y-1">{selectedProperty.features.map((feature, index) => (<li key={index}>{feature}</li>))}</ul></>
                                         )}
                                         {selectedProperty.corretor && (
                                             <><h4 className="font-bold text-lg mb-2">Corretor Responsável</h4><div className="bg-primary-50 p-4 rounded-lg flex items-center justify-between"><div><p className="font-semibold text-gray-800">{selectedProperty.corretor.name}</p>{selectedProperty.corretor.whatsapp && <a href={`https://wa.me/${selectedProperty.corretor.whatsapp.replace(/\D/g, '')}`} target="_blank" className="text-green-600 text-sm hover:underline">Falar no WhatsApp</a>}{selectedProperty.corretor.email && <a href={`mailto:${selectedProperty.corretor.email}`} className="text-blue-600 text-sm hover:underline block">{selectedProperty.corretor.email}</a>}</div><MessageSquare className="text-primary-400" size={32}/></div></>

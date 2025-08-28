@@ -66,8 +66,8 @@ const propertySchema = new mongoose.Schema({
     features: [String], // características especiais
     status: {
         type: String,
-        enum: ['ativo', 'inativo', 'vendido', 'alugado'],
-        default: 'ativo'
+        enum: ['ativo', 'inativo', 'rejeitado', 'vendido', 'alugado'],
+        default: 'inativo'
     },
     isHighlighted: {
         type: Boolean,

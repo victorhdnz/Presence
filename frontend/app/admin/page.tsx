@@ -1309,6 +1309,30 @@ function AdminPage() {
                   </div>
                 )}
 
+                {/* Detalhes Adicionais */}
+                {selectedProperty.details && selectedProperty.details.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Detalhes Adicionais</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      {selectedProperty.details.map((detail, index) => (
+                        <li key={index} className="text-gray-700">{detail}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Características Especiais */}
+                {selectedProperty.features && selectedProperty.features.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Características Especiais</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      {selectedProperty.features.map((feature, index) => (
+                        <li key={index} className="text-gray-700">{feature}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {selectedProperty.images && selectedProperty.images.length > 0 && (
                   <div className="mt-4">
                     <h3 className="text-lg font-medium text-gray-900 mb-3">Imagens</h3>
