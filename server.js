@@ -39,8 +39,8 @@ mongoose.connect(dbURI, {
     serverSelectionTimeoutMS: 10000, // Timeout de 10 segundos
     socketTimeoutMS: 45000, // Timeout do socket
 })
-.then(() => console.log('Conectado com sucesso ao MongoDB.'))
-.catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
+    .then(() => console.log('Conectado com sucesso ao MongoDB.'))
+    .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
 
 // --- 5. ROTAS DA API ---
 const authRoutes = require('./routes/auth');

@@ -1,45 +1,37 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { toast } from 'react-hot-toast'
 import { 
-  Building2, Users, Home, Plus, Edit, Trash2, Eye, 
-  Star, CheckCircle, XCircle, DollarSign, TrendingUp, MessageCircle,
-  FileText, CheckSquare, UserCheck, Building, X, Upload
+  Home, Users, Eye, Edit, Trash2, Plus, X, CheckCircle, XCircle, Star, Upload
 } from 'lucide-react'
-import toast from 'react-hot-toast'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+
+// Dados das corretoras
+const CORRETORAS = [
+  { name: 'Presence Imobiliária', whatsapp: '(11) 99999-9999', email: 'contato@presence.com.br' },
+  { name: 'Imobiliária Central', whatsapp: '(11) 88888-8888', email: 'central@imobiliaria.com.br' },
+  { name: 'Corretora Premium', whatsapp: '(11) 77777-7777', email: 'premium@corretora.com.br' }
+]
+
+interface User {
+  _id: string
+  name: string
+  email: string
+  role: 'admin' | 'client'
+  isActive: boolean
+  lastLogin?: string
+}
 
 interface Property {
   _id: string
   title: string
+  purpose: 'venda' | 'aluguel'
   price: number
   neighborhood: string
-  status: string
-  isHighlighted: boolean
-  createdAt: string
-  submittedBy: {
-    name: string
-    email: string
-    role?: string
-  }
-  corretor?: {
-    name: string
-    whatsapp: string
-    email: string
-  }
-  purpose?: string
-  bedrooms?: number
-  bathrooms?: number
-  parkingSpaces?: number
-  totalArea?: number
-  landSize?: number
-  longDescription?: string
-  details?: string[]
-  features?: string[]
   address?: {
     street: string
     number: string
@@ -48,51 +40,88 @@ interface Property {
     state: string
     zipCode?: string
   }
+  bedrooms: number
+  bathrooms: number
+  parkingSpaces: number
+  landSize?: number
+  totalArea: number
+  longDescription?: string
+  details?: string[]
+  features?: string[]
+  corretor: {
+    name: string
+    whatsapp: string
+    email: string
+  }
+  submittedBy: {
+    _id: string
+    name: string
+    email: string
+    phone?: string
+  }
+  approvedBy?: {
+    _id: string
+    name: string
+  }
+  status: 'ativo' | 'inativo' | 'rejeitado'
+  isHighlighted: boolean
   images?: Array<{
     url: string
+    publicId: string
     isMain: boolean
   }>
-}
-
-interface User {
-  _id: string
-  name: string
-  email: string
-  role: string
-  isActive: boolean
-  lastLogin: string
   createdAt: string
+  updatedAt?: string
+  approvedAt?: string
 }
 
-// Dados das corretoras
-const CORRETORAS = [
-  {
-    name: 'Helo',
-    whatsapp: '5534999999999',
-    email: 'helo@presence.com.br'
-  },
-  {
-    name: 'Vânia',
-    whatsapp: '5534888888888',
-    email: 'vania@presence.com.br'
+interface NewProperty {
+  title: string
+  purpose: 'venda' | 'aluguel'
+  price: string
+  neighborhood: string
+  address?: {
+    street: string
+    number: string
+    complement?: string
+    city: string
+    state: string
+    zipCode?: string
   }
-]
+  bedrooms: string
+  bathrooms: string
+  parkingSpaces: string
+  landSize?: string
+  totalArea: string
+  longDescription: string
+  details?: string[]
+  features?: string[]
+  corretor: {
+    name: string
+    whatsapp: string
+    email: string
+  }
+}
 
-export default function AdminDashboard() {
-  const { user, isAuthenticated } = useAuth()
+interface PropertyImage {
+  url: string
+  file?: File
+  isMain: boolean
+}
+
+function AdminPage() {
   const router = useRouter()
-  const [properties, setProperties] = useState<Property[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [properties, setProperties] = useState<Property[]>([])
   const [activeTab, setActiveTab] = useState('overview')
   const [showNewPropertyForm, setShowNewPropertyForm] = useState(false)
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [showPropertyDetails, setShowPropertyDetails] = useState(false)
   const [showEditPropertyForm, setShowEditPropertyForm] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [editingProperty, setEditingProperty] = useState<Property | null>(null)
-  const [newProperty, setNewProperty] = useState({
+  const [newProperty, setNewProperty] = useState<NewProperty>({
     title: '',
-    purpose: 'venda' as 'venda' | 'aluguel',
+    purpose: 'venda',
     price: '',
     neighborhood: '',
     bedrooms: '',
@@ -102,130 +131,55 @@ export default function AdminDashboard() {
     longDescription: '',
     corretor: CORRETORAS[0]
   })
-  const [newPropertyImages, setNewPropertyImages] = useState<Array<{
-    url: string
-    file?: File
-    isMain: boolean
-  }>>([])
+  const [newPropertyImages, setNewPropertyImages] = useState<PropertyImage[]>([])
+  const [showUserManagementModal, setShowUserManagementModal] = useState(false)
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'client' as 'admin' | 'client'
+  })
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'admin') {
-      router.push('/login')
-      return
-    }
+    checkAuth()
     fetchData()
-  }, [isAuthenticated, user, router])
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.push('/login')
+        return
+      }
+
+      const response = await api.get('/auth/profile')
+      if (response.data.role !== 'admin') {
+        router.push('/')
+        return
+      }
+    } catch (error) {
+      router.push('/login')
+    }
+  }
 
   const fetchData = async () => {
     try {
-      const [propertiesRes, usersRes] = await Promise.all([
-        api.get('/properties/admin/all'),
-        api.get('/auth/users')
+      const [usersResponse, propertiesResponse] = await Promise.all([
+        api.get('/auth/users'),
+        api.get('/properties/admin/all')
       ])
-      setProperties(propertiesRes.data)
-      setUsers(usersRes.data)
-          } catch (error) {
-        toast.error('Erro ao carregar dados do dashboard')
-      } finally {
-      setIsLoading(false)
-    }
-  }
 
-  const handlePropertyStatus = async (propertyId: string, status: string) => {
-    try {
-      await api.patch(`/properties/${propertyId}/approve`, { 
-        status, 
-        approved: status === 'ativo' 
-      })
-      toast.success(`Imóvel ${status === 'ativo' ? 'aprovado' : 'rejeitado'} com sucesso!`)
-      fetchData()
+      setUsers(usersResponse.data)
+      setProperties(propertiesResponse.data)
     } catch (error) {
-      toast.error('Erro ao alterar status do imóvel')
-    }
-  }
-
-  const handleHighlight = async (propertyId: string, isHighlighted: boolean) => {
-    try {
-      await api.patch(`/properties/${propertyId}/highlight`, { isHighlighted })
-      toast.success(`Imóvel ${isHighlighted ? 'destacado' : 'desdestacado'} com sucesso!`)
-      fetchData()
-    } catch (error) {
-      toast.error('Erro ao alterar destaque do imóvel')
-    }
-  }
-
-  const handleDeleteProperty = async (propertyId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este imóvel?')) return
-    
-    try {
-      await api.delete(`/properties/${propertyId}`)
-      toast.success('Imóvel excluído com sucesso!')
-      fetchData()
-    } catch (error) {
-      toast.error('Erro ao excluir imóvel')
-    }
-  }
-
-  const handleUserStatus = async (userId: string, isActive: boolean) => {
-    try {
-      await api.patch(`/auth/users/${userId}/status`, { isActive })
-      toast.success(`Usuário ${isActive ? 'ativado' : 'desativado'} com sucesso!`)
-      fetchData()
-    } catch (error) {
-      toast.error('Erro ao alterar status do usuário')
-    }
-  }
-
-  const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) return
-    
-    try {
-      await api.delete(`/auth/users/${userId}`)
-      toast.success('Usuário excluído com sucesso!')
-      fetchData()
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro ao excluir usuário'
-      toast.error(message)
-    }
-  }
-
-  const handleViewDetails = async (propertyId: string) => {
-    try {
-      const response = await api.get(`/properties/${propertyId}`)
-      setSelectedProperty(response.data)
-      setShowPropertyDetails(true)
-    } catch (error) {
-      toast.error('Erro ao carregar detalhes do imóvel')
-    }
-  }
-
-  const handleEditProperty = async (propertyId: string) => {
-    try {
-      const response = await api.get(`/properties/${propertyId}`)
-      setEditingProperty(response.data)
-      setShowEditPropertyForm(true)
-    } catch (error) {
-      toast.error('Erro ao carregar dados do imóvel para edição')
-    }
-  }
-
-  const handleUpdateProperty = async (updatedData: any) => {
-    if (!editingProperty) return
-    
-    try {
-      await api.put(`/properties/${editingProperty._id}`, updatedData)
-      toast.success('Imóvel atualizado com sucesso!')
-      setShowEditPropertyForm(false)
-      setEditingProperty(null)
-      fetchData()
-    } catch (error) {
-      toast.error('Erro ao atualizar imóvel')
+      toast.error('Erro ao carregar dados')
     }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    
+
     files.forEach(file => {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader()
@@ -259,15 +213,16 @@ export default function AdminDashboard() {
       const uploadedImages = []
       for (const image of newPropertyImages) {
         if (image.file) {
-                     const formDataImage = new FormData()
-           formDataImage.append('images', image.file)
-          
+          const formDataImage = new FormData()
+          formDataImage.append('images', image.file)
+
           const response = await api.post('/upload/images', formDataImage, {
             headers: { 'Content-Type': 'multipart/form-data' }
           })
-          
+
+          // CORREÇÃO IMPORTANTE: response.data.images[0].url em vez de response.data.url
           uploadedImages.push({
-            url: response.data.url,
+            url: response.data.images[0].url,
             isMain: image.isMain
           })
         }
@@ -306,83 +261,195 @@ export default function AdminDashboard() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <div className="bg-gray-50 flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </div>
-        <Footer />
-      </div>
-    )
+  const handleViewDetails = async (propertyId: string) => {
+    try {
+      const response = await api.get(`/properties/${propertyId}`)
+      setSelectedProperty(response.data)
+      setShowPropertyDetails(true)
+    } catch (error) {
+      toast.error('Erro ao carregar detalhes do imóvel')
+    }
   }
 
-  // Filtrar imóveis por tipo e status
-  const adminProperties = properties.filter(p => p.submittedBy?.role === 'admin' || (p.status === 'ativo' && !p.submittedBy?.role))
-  const clientProperties = properties.filter(p => p.submittedBy && p.submittedBy.role !== 'admin' && p.status !== 'rejeitado')
+  const handleEditProperty = async (propertyId: string) => {
+    const property = properties.find(p => p._id === propertyId)
+    if (property) {
+      setEditingProperty(property)
+      setShowEditPropertyForm(true)
+    }
+  }
+
+  const handleUpdateProperty = async (updatedData: Partial<Property>) => {
+    if (!editingProperty) return
+
+    try {
+      await api.put(`/properties/${editingProperty._id}`, updatedData)
+      toast.success('Imóvel atualizado com sucesso!')
+      setShowEditPropertyForm(false)
+      setEditingProperty(null)
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao atualizar imóvel')
+    }
+  }
+
+  const handleDeleteProperty = async (propertyId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este imóvel?')) return
+
+    try {
+      await api.delete(`/properties/${propertyId}`)
+      toast.success('Imóvel excluído com sucesso!')
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao excluir imóvel')
+    }
+  }
+
+  const handlePropertyStatus = async (propertyId: string, status: 'ativo' | 'rejeitado') => {
+    try {
+      await api.patch(`/properties/${propertyId}/approve`, { status, approved: status === 'ativo' })
+      toast.success(`Imóvel ${status === 'ativo' ? 'aprovado' : 'rejeitado'} com sucesso!`)
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao atualizar imóvel')
+    }
+  }
+
+  const handleHighlight = async (propertyId: string, isHighlighted: boolean) => {
+    try {
+      await api.patch(`/properties/${propertyId}/highlight`, { isHighlighted })
+      toast.success(`Imóvel ${isHighlighted ? 'destacado' : 'desdestacado'} com sucesso!`)
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao destacar imóvel')
+    }
+  }
+
+  const handleUserStatus = async (userId: string, isActive: boolean) => {
+    try {
+      await api.patch(`/auth/users/${userId}/status`, { isActive })
+      toast.success(`Usuário ${isActive ? 'ativado' : 'desativado'} com sucesso!`)
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao atualizar usuário')
+    }
+  }
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o usuário ${userName}?`)) return
+
+    try {
+      await api.delete(`/auth/users/${userId}`)
+      toast.success('Usuário excluído com sucesso!')
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao excluir usuário')
+    }
+  }
+
+  const handleCreateUser = async () => {
+    try {
+      await api.post('/auth/register', newUser)
+      toast.success('Usuário criado com sucesso!')
+      setNewUser({
+        name: '',
+        email: '',
+        password: '',
+        role: 'client'
+      })
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao criar usuário')
+    }
+  }
+
+  const handleToggleUserStatus = async (userId: string) => {
+    const user = users.find(u => u._id === userId)
+    if (!user) return
+
+    try {
+      await api.patch(`/auth/users/${userId}/status`, { isActive: !user.isActive })
+      toast.success(`Usuário ${!user.isActive ? 'ativado' : 'desativado'} com sucesso!`)
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao atualizar usuário')
+    }
+  }
+
+  // Filtrar propriedades
   const activeProperties = properties.filter(p => p.status === 'ativo')
   const pendingProperties = properties.filter(p => p.status === 'inativo')
-  const totalUsers = users.length
+  const adminProperties = properties.filter(p => p.status === 'ativo')
+  const clientProperties = properties.filter(p => p.status === 'inativo')
   const activeUsers = users.filter(u => u.isActive).length
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="bg-gray-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
-                <p className="text-gray-600">Bem-vindo, {user?.name}!</p>
-              </div>
-              <button
-                onClick={() => setShowNewPropertyForm(true)}
-                className="btn-primary"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Novo Imóvel
-              </button>
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header da Página */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
+          <p className="mt-2 text-gray-600">Gerencie imóveis, usuários e configurações do sistema</p>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Tabs */}
-          <div className="border-b border-gray-200 mb-8">
-            <nav className="-mb-px flex space-x-8">
-              {[
-                { id: 'overview', name: 'Visão Geral', icon: TrendingUp },
-                { id: 'client-properties', name: 'Imóveis de Clientes', icon: UserCheck },
-                { id: 'admin-properties', name: 'Imóveis das Corretoras', icon: Building },
-                { id: 'users', name: 'Usuários', icon: Users }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-primary-500 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <tab.icon className="h-5 w-5" />
-                  <span>{tab.name}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
+        {/* Tabs de Navegação */}
+        <div className="mb-6">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'overview', label: 'Visão Geral', icon: Home },
+              { id: 'client-properties', label: 'Imóveis de Clientes', icon: Eye },
+              { id: 'admin-properties', label: 'Imóveis das Corretoras', icon: Home },
+              { id: 'users', label: 'Usuários', icon: Users }
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === id
+                    ? 'bg-primary-100 text-primary-700 border-b-2 border-primary-500'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
-          {/* Modal Novo Imóvel */}
-          {showNewPropertyForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 sm:p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-2xl font-bold mb-6">Criar Novo Imóvel</h2>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {/* Botão de Criar Novo Imóvel */}
+        {activeTab === 'admin-properties' && (
+          <div className="mb-6">
+            <button
+              onClick={() => setShowNewPropertyForm(true)}
+              className="btn-primary flex items-center space-x-2"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Novo Imóvel</span>
+            </button>
+          </div>
+        )}
+
+        {/* Formulário de Novo Imóvel */}
+        {showNewPropertyForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Header do Modal */}
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Criar Novo Imóvel</h2>
+                <button
+                  onClick={() => setShowNewPropertyForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Formulário */}
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Título *</label>
                     <input
@@ -393,22 +460,19 @@ export default function AdminDashboard() {
                       placeholder="Título do imóvel"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Finalidade *</label>
-                    <div className="relative">
-                      <select
-                        value={newProperty.purpose}
-                        onChange={(e) => setNewProperty(prev => ({ ...prev, purpose: e.target.value as 'venda' | 'aluguel' }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white"
-                        style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
-                      >
-                        <option value="venda">Venda</option>
-                        <option value="aluguel">Aluguel</option>
-                      </select>
-                    </div>
+                    <select
+                      value={newProperty.purpose}
+                      onChange={(e) => setNewProperty(prev => ({ ...prev, purpose: e.target.value as 'venda' | 'aluguel' }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value="venda">Venda</option>
+                      <option value="aluguel">Aluguel</option>
+                    </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Preço *</label>
                     <input
@@ -419,7 +483,7 @@ export default function AdminDashboard() {
                       placeholder="0.00"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Bairro *</label>
                     <input
@@ -430,7 +494,7 @@ export default function AdminDashboard() {
                       placeholder="Nome do bairro"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Quartos *</label>
                     <input
@@ -441,7 +505,7 @@ export default function AdminDashboard() {
                       placeholder="0"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Banheiros *</label>
                     <input
@@ -452,7 +516,7 @@ export default function AdminDashboard() {
                       placeholder="0"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Vagas</label>
                     <input
@@ -463,7 +527,7 @@ export default function AdminDashboard() {
                       placeholder="0"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Área Total (m²)</label>
                     <input
@@ -475,30 +539,117 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </div>
-                
+
+                {/* Campos de Endereço */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Corretor Responsável *</label>
-                  <div className="relative">
-                    <select
-                      value={newProperty.corretor.name}
-                      onChange={(e) => {
-                        const corretor = CORRETORAS.find(c => c.name === e.target.value)
-                        if (corretor) {
-                          setNewProperty(prev => ({ ...prev, corretor }))
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white"
-                      style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
-                    >
-                      {CORRETORAS.map(corretor => (
-                        <option key={corretor.name} value={corretor.name}>
-                          {corretor.name} - {corretor.whatsapp}
-                        </option>
-                      ))}
-                    </select>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Endereço (Opcional)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rua</label>
+                      <input
+                        type="text"
+                        value={newProperty.address?.street || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          address: { ...prev.address, street: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '' }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="Nome da rua"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Número</label>
+                      <input
+                        type="text"
+                        value={newProperty.address?.number || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          address: { ...prev.address, number: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '' }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="123"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Complemento</label>
+                      <input
+                        type="text"
+                        value={newProperty.address?.complement || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          address: { ...prev.address, complement: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="Apto 101, Bloco A"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+                      <input
+                        type="text"
+                        value={newProperty.address?.city || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          address: { ...prev.address, city: e.target.value, state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="São Paulo"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                      <input
+                        type="text"
+                        value={newProperty.address?.state || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          address: { ...prev.address, state: e.target.value, city: prev.address?.city || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="SP"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">CEP</label>
+                      <input
+                        type="text"
+                        value={newProperty.address?.zipCode || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          address: { ...prev.address, zipCode: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="00000-000"
+                      />
+                    </div>
                   </div>
                 </div>
-                
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Corretor Responsável *</label>
+                  <select
+                    value={newProperty.corretor.name}
+                    onChange={(e) => {
+                      const corretor = CORRETORAS.find(c => c.name === e.target.value)
+                      if (corretor) {
+                        setNewProperty(prev => ({ ...prev, corretor }))
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    {CORRETORAS.map(corretor => (
+                      <option key={corretor.name} value={corretor.name}>
+                        {corretor.name} - {corretor.whatsapp}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
                   <textarea
@@ -510,13 +661,48 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Campos de Detalhes e Características */}
+                <div className="mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Detalhes e Características (Opcional)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Detalhes</label>
+                      <textarea
+                        value={newProperty.details?.join('\n') || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          details: e.target.value.split('\n').filter(item => item.trim() !== '')
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        rows={4}
+                        placeholder="Digite cada detalhe em uma linha separada&#10;Ex: Piso laminado&#10;Cozinha planejada&#10;Sacada com churrasqueira"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Digite cada detalhe em uma linha separada</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Características</label>
+                      <textarea
+                        value={newProperty.features?.join('\n') || ''}
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
+                          features: e.target.value.split('\n').filter(item => item.trim() !== '')
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        rows={4}
+                        placeholder="Digite cada característica em uma linha separada&#10;Ex: Piscina&#10;Academia&#10;Portaria 24h"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Digite cada característica em uma linha separada</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Upload de Imagens */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Fotos do Imóvel</label>
-                  
                   <div className="space-y-4">
                     {/* Área de Upload */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"> 
                       <input
                         type="file"
                         id="admin-images"
@@ -549,14 +735,14 @@ export default function AdminDashboard() {
                               alt={`Preview ${index + 1}`}
                               className="w-full h-32 object-cover rounded-lg border"
                             />
-                            
+
                             {/* Badge de Foto Principal */}
                             {image.isMain && (
                               <div className="absolute top-2 left-2 bg-primary-600 text-white text-xs px-2 py-1 rounded">
                                 Principal
                               </div>
                             )}
-                            
+
                             {/* Botões de Ação */}
                             <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
                               {!image.isMain && (
@@ -582,16 +768,16 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                     )}
-                    
+
                     {newPropertyImages.length > 0 && (
                       <p className="text-sm text-gray-600">
-                        {newPropertyImages.length} foto(s) selecionada(s). 
+                        {newPropertyImages.length} foto(s) selecionada(s).
                         {newPropertyImages.find(img => img.isMain) ? ' A foto principal está marcada.' : ' Clique na estrela para definir a foto principal.'}
                       </p>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end space-x-4">
                   <button
                     onClick={() => setShowNewPropertyForm(false)}
@@ -608,137 +794,67 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Conteúdo das Tabs */}
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Cards de Estatísticas */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Home className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Total de Imóveis</p>
-                      <p className="text-2xl font-bold text-gray-900">{properties.length}</p>
-                    </div>
+        {/* Conteúdo das Tabs */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Cards de Estatísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Home className="h-6 w-6 text-blue-600" />
                   </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <CheckCircle className="h-6 w-6 text-green-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Imóveis Ativos</p>
-                      <p className="text-2xl font-bold text-gray-900">{activeProperties.length}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-yellow-100 rounded-lg">
-                      <Eye className="h-6 w-6 text-yellow-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Aguardando Aprovação</p>
-                      <p className="text-2xl font-bold text-gray-900">{pendingProperties.length}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Users className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Usuários Ativos</p>
-                      <p className="text-2xl font-bold text-gray-900">{activeUsers}</p>
-                    </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total de Imóveis</p>
+                    <p className="text-2xl font-bold text-gray-900">{properties.length}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Imóveis Recentes */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Imóveis Recentes</h3>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Imóveis Ativos</p>
+                    <p className="text-2xl font-bold text-gray-900">{activeProperties.length}</p>
+                  </div>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Imóvel
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Corretor
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Preço
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Ações
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {adminProperties.slice(0, 5).map((property) => (
-                        <tr key={property._id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{property.title}</div>
-                              <div className="text-sm text-gray-500">{property.neighborhood}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {property.corretor?.name || 'Não definido'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              property.status === 'ativo' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {property.status === 'ativo' ? 'Ativo' : 'Pendente'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            R$ {property.price.toLocaleString('pt-BR')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => handleViewDetails(property._id)}
-                              className="text-primary-600 hover:text-primary-900 mr-3"
-                              title="Ver detalhes"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Eye className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Aguardando Aprovação</p>
+                    <p className="text-2xl font-bold text-gray-900">{pendingProperties.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Users className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Usuários Ativos</p>
+                    <p className="text-2xl font-bold text-gray-900">{activeUsers}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
 
-          {activeTab === 'client-properties' && (
+            {/* Imóveis Recentes */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Imóveis de Clientes</h3>
-                <p className="text-sm text-gray-600 mt-1">Imóveis enviados pelos clientes para cadastro</p>
+                <h3 className="text-lg font-medium text-gray-900">Imóveis Recentes</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -748,7 +864,7 @@ export default function AdminDashboard() {
                         Imóvel
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Cliente
+                        Corretor
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
@@ -762,7 +878,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {clientProperties.map((property) => (
+                    {adminProperties.slice(0, 5).map((property) => (
                       <tr key={property._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -771,246 +887,315 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{property.submittedBy.name}</div>
-                          <div className="text-sm text-gray-500">{property.submittedBy.email}</div>
+                          <div className="text-sm text-gray-900">
+                            {property.corretor?.name || 'Não definido'}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            property.status === 'ativo' 
-                              ? 'bg-green-100 text-green-800' 
+                            property.status === 'ativo'
+                              ? 'bg-green-100 text-green-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {property.status === 'ativo' ? 'Aprovado' : 'Aguardando'}
+                            {property.status === 'ativo' ? 'Ativo' : 'Pendente'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           R$ {property.price.toLocaleString('pt-BR')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            {property.status === 'inativo' && (
-                              <>
-                                <button
-                                  onClick={() => handlePropertyStatus(property._id, 'ativo')}
-                                  className="text-green-600 hover:text-green-900"
-                                  title="Aprovar"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handlePropertyStatus(property._id, 'rejeitado')}
-                                  className="text-red-600 hover:text-red-900"
-                                  title="Rejeitar"
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
-                            <button
-                              onClick={() => handleViewDetails(property._id)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Ver detalhes"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleViewDetails(property._id)}
+                            className="text-primary-600 hover:text-primary-900 mr-3"
+                            title="Ver detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'client-properties' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Imóveis de Clientes</h3>
+              <p className="text-sm text-gray-600 mt-1">Imóveis enviados pelos clientes para cadastro</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Imóvel
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Preço
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {clientProperties.map((property) => (
+                    <tr key={property._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{property.title}</div>
+                          <div className="text-sm text-gray-500">{property.neighborhood}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{property.submittedBy.name}</div>
+                        <div className="text-sm text-gray-500">{property.submittedBy.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          property.status === 'ativo'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {property.status === 'ativo' ? 'Aprovado' : 'Aguardando'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        R$ {property.price.toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          {property.status === 'inativo' && (
+                            <>
+                              <button
+                                onClick={() => handlePropertyStatus(property._id, 'ativo')}
+                                className="text-green-600 hover:text-green-900"
+                                title="Aprovar"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handlePropertyStatus(property._id, 'rejeitado')}
+                                className="text-red-600 hover:text-red-900"
+                                title="Rejeitar"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleViewDetails(property._id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Ver detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
                 {clientProperties.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     Nenhum imóvel de cliente
                   </div>
                 )}
-              </div>
+              </table>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'admin-properties' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Imóveis das Corretoras</h3>
-                <p className="text-sm text-gray-600 mt-1">Imóveis cadastrados diretamente pelas corretoras</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Imóvel
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Enviado por
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Preço
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ações
-                      </th>
+        {activeTab === 'admin-properties' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Imóveis das Corretoras</h3>
+              <p className="text-sm text-gray-600 mt-1">Imóveis cadastrados diretamente pelas corretoras</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Imóvel
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Enviado por
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Preço
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {adminProperties.map((property) => (
+                    <tr key={property._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{property.title}</div>
+                          <div className="text-sm text-gray-500">{property.neighborhood}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{property.submittedBy.name}</div>
+                        <div className="text-sm text-gray-500">{property.submittedBy.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          Ativo
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        R$ {property.price.toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleHighlight(property._id, !property.isHighlighted)}
+                            className={`${property.isHighlighted ? 'text-yellow-600' : 'text-gray-400'} hover:text-yellow-600`}
+                            title={property.isHighlighted ? 'Remover destaque' : 'Destacar'}
+                          >
+                            <Star className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleViewDetails(property._id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Ver detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEditProperty(property._id)}
+                            className="text-gray-600 hover:text-gray-900"
+                            title="Editar"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProperty(property._id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                                         {adminProperties.map((property) => (
-                      <tr key={property._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{property.title}</div>
-                            <div className="text-sm text-gray-500">{property.neighborhood}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{property.submittedBy.name}</div>
-                          <div className="text-sm text-gray-500">{property.submittedBy.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                            Ativo
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          R$ {property.price.toLocaleString('pt-BR')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-
-                            <button
-                              onClick={() => handleHighlight(property._id, !property.isHighlighted)}
-                              className={`${property.isHighlighted ? 'text-yellow-600' : 'text-gray-400'} hover:text-yellow-600`}
-                              title={property.isHighlighted ? 'Remover destaque' : 'Destacar'}
-                            >
-                              <Star className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleViewDetails(property._id)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Ver detalhes"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEditProperty(property._id)}
-                              className="text-gray-600 hover:text-gray-900"
-                              title="Editar"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProperty(property._id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Excluir"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                                 {adminProperties.length === 0 && (
+                  ))}
+                </tbody>
+                {adminProperties.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     Nenhum imóvel das corretoras
                   </div>
                 )}
-              </div>
+              </table>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'users' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Gerenciar Usuários</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Usuário
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Função
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Último Login
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ações
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            user.role === 'admin' 
-                              ? 'bg-purple-100 text-purple-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {user.role === 'admin' ? 'Administrador' : 'Cliente'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            user.isActive 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {user.isActive ? 'Ativo' : 'Inativo'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.lastLogin 
-                            ? new Date(user.lastLogin).toLocaleDateString('pt-BR')
-                            : 'Nunca'
-                          }
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center space-x-4">
-                            <button
-                              onClick={() => handleUserStatus(user._id, !user.isActive)}
-                              className={`px-3 py-1 rounded text-xs font-medium ${
-                                user.isActive 
-                                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
-                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
-                              }`}
-                              title={user.isActive ? 'Desativar usuário temporariamente' : 'Ativar usuário'}
-                            >
-                              {user.isActive ? 'Desativar' : 'Ativar'}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user._id, user.name)}
-                              className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded"
-                              title="Excluir usuário permanentemente"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        {activeTab === 'users' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Gerenciar Usuários</h3>
             </div>
-          )}
-        </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Função
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Último Login
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.role === 'admin'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {user.role === 'admin' ? 'Administrador' : 'Cliente'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.isActive ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.lastLogin
+                          ? new Date(user.lastLogin).toLocaleDateString('pt-BR')
+                          : 'Nunca'
+                        }
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-4">
+                          <button
+                            onClick={() => handleUserStatus(user._id, !user.isActive)}
+                            className={`px-3 py-1 rounded text-xs font-medium ${
+                              user.isActive
+                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                : 'bg-green-100 text-green-800 hover:bg-green-200'
+                            }`}
+                            title={user.isActive ? 'Desativar usuário temporariamente' : 'Ativar usuário'}
+                          >
+                            {user.isActive ? 'Desativar' : 'Ativar'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user._id, user.name)}
+                            className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded"
+                            title="Excluir usuário permanentemente"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal de Detalhes do Imóvel */}
@@ -1040,7 +1225,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-600">Finalidade:</span>
-                    <p className="text-gray-900 capitalize">{selectedProperty.purpose}</p>
+                    <p className="text-gray-900">{selectedProperty.purpose === 'venda' ? 'Venda' : 'Aluguel'}</p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-600">Preço:</span>
@@ -1064,115 +1249,464 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-600">Área Total:</span>
-                    <p className="text-gray-900">{selectedProperty.totalArea} m²</p>
+                    <p className="text-gray-900">{selectedProperty.totalArea}m²</p>
                   </div>
                 </div>
-              </div>
 
-              {/* Endereço */}
-              {selectedProperty.address && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Endereço</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-900">
-                      {selectedProperty.address.street}, {selectedProperty.address.number}
-                      {selectedProperty.address.complement && `, ${selectedProperty.address.complement}`}
-                    </p>
-                    <p className="text-gray-900">
-                      {selectedProperty.address.city} - {selectedProperty.address.state}
-                      {selectedProperty.address.zipCode && ` | CEP: ${selectedProperty.address.zipCode}`}
-                    </p>
+                {selectedProperty.longDescription && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Descrição</h3>
+                    <p className="text-gray-700">{selectedProperty.longDescription}</p>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Descrição */}
-              {selectedProperty.longDescription && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Descrição</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-900 whitespace-pre-wrap">{selectedProperty.longDescription}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Detalhes */}
-              {selectedProperty.details && selectedProperty.details.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Detalhes</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <ul className="list-disc list-inside space-y-1">
-                      {selectedProperty.details.map((detail, index) => (
-                        <li key={index} className="text-gray-900">{detail}</li>
+                {selectedProperty.images && selectedProperty.images.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Imagens</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedProperty.images.map((image, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={image.url}
+                            alt={`Imagem ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          {image.isMain && (
+                            <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-full text-xs">
+                              Principal
+                            </div>
+                          )}
+                        </div>
                       ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {/* Características */}
-              {selectedProperty.features && selectedProperty.features.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Características Especiais</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <ul className="list-disc list-inside space-y-1">
-                      {selectedProperty.features.map((feature, index) => (
-                        <li key={index} className="text-gray-900">{feature}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {/* Corretor */}
-              {selectedProperty.corretor && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Corretor Responsável</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <span className="text-sm font-medium text-gray-600">Nome:</span>
-                        <p className="text-gray-900">{selectedProperty.corretor.name}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-600">WhatsApp:</span>
-                        <p className="text-gray-900">{selectedProperty.corretor.whatsapp}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-600">Email:</span>
-                        <p className="text-gray-900">{selectedProperty.corretor.email}</p>
-                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              {/* Informações do Envio */}
+      {/* Modal de Gerenciar Usuários */}
+      {showUserManagementModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Gerenciar Usuários</h2>
+              <button
+                onClick={() => setShowUserManagementModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Criar Novo Usuário</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nome
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nome completo"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Senha
+                    </label>
+                    <input
+                      type="password"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Senha"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Função
+                    </label>
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'admin' | 'client' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="client">Cliente</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCreateUser}
+                  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Criar Usuário
+                </button>
+              </div>
+
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Informações do Envio</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Enviado por:</span>
-                      <p className="text-gray-900">{selectedProperty.submittedBy.name}</p>
-                      <p className="text-gray-600 text-sm">{selectedProperty.submittedBy.email}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Data de Envio:</span>
-                      <p className="text-gray-900">
-                        {new Date(selectedProperty.createdAt).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Usuários Existentes</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Nome
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Função
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {users.map((user) => (
+                        <tr key={user._id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {user.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {user.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              user.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {user.role === 'admin' ? 'Administrador' : 'Cliente'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              user.isActive 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.isActive ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-gray-500">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleToggleUserStatus(user._id)}
+                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                  user.isActive
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                }`}
+                              >
+                                {user.isActive ? 'Desativar' : 'Ativar'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user._id, user.name)}
+                                className="px-3 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                              >
+                                Excluir
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Propriedade */}
+      {showEditPropertyForm && editingProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header do Modal */}
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Editar Imóvel</h2>
+              <button
+                onClick={() => setShowEditPropertyForm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Formulário de Edição */}
+            <div className="px-6 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Título *</label>
+                  <input
+                    type="text"
+                    value={editingProperty.title}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, title: e.target.value } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Finalidade *</label>
+                  <select
+                    value={editingProperty.purpose}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, purpose: e.target.value as 'venda' | 'aluguel' } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="venda">Venda</option>
+                    <option value="aluguel">Aluguel</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Preço *</label>
+                  <input
+                    type="number"
+                    value={editingProperty.price}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, price: Number(e.target.value) } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bairro *</label>
+                  <input
+                    type="text"
+                    value={editingProperty.neighborhood}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, neighborhood: e.target.value } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quartos *</label>
+                  <input
+                    type="number"
+                    value={editingProperty.bedrooms}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, bedrooms: Number(e.target.value) } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Banheiros *</label>
+                  <input
+                    type="number"
+                    value={editingProperty.bathrooms}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, bathrooms: Number(e.target.value) } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vagas</label>
+                  <input
+                    type="number"
+                    value={editingProperty.parkingSpaces}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, parkingSpaces: Number(e.target.value) } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Total (m²)</label>
+                  <input
+                    type="number"
+                    value={editingProperty.totalArea}
+                    onChange={(e) => setEditingProperty(prev => prev ? { ...prev, totalArea: Number(e.target.value) } : null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Campos de Endereço */}
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Endereço (Opcional)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Rua</label>
+                    <input
+                      type="text"
+                      value={editingProperty.address?.street || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        address: { ...prev.address, street: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', number: prev.address?.number || '' }
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Nome da rua"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Número</label>
+                    <input
+                      type="text"
+                      value={editingProperty.address?.number || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        address: { ...prev.address, number: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '' }
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="123"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Complemento</label>
+                    <input
+                      type="text"
+                      value={editingProperty.address?.complement || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        address: { ...prev.address, complement: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Apto 101, Bloco A"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+                    <input
+                      type="text"
+                      value={editingProperty.address?.city || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        address: { ...prev.address, city: e.target.value, state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="São Paulo"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <input
+                      type="text"
+                      value={editingProperty.address?.state || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        address: { ...prev.address, state: e.target.value, city: prev.address?.city || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="SP"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">CEP</label>
+                    <input
+                      type="text"
+                      value={editingProperty.address?.zipCode || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        address: { ...prev.address, zipCode: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="00000-000"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Imagens */}
-              {selectedProperty.images && selectedProperty.images.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Imagens</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Corretor Responsável *</label>
+                <select
+                  value={editingProperty.corretor?.name || ''}
+                  onChange={(e) => {
+                    const corretor = CORRETORAS.find(c => c.name === e.target.value)
+                    if (corretor) {
+                      setEditingProperty(prev => prev ? { ...prev, corretor } : null)
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  {CORRETORAS.map(corretor => (
+                    <option key={corretor.name} value={corretor.name}>
+                      {corretor.name} - {corretor.whatsapp}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                <textarea
+                  value={editingProperty.longDescription || ''}
+                  onChange={(e) => setEditingProperty(prev => prev ? { ...prev, longDescription: e.target.value } : null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  rows={3}
+                />
+              </div>
+
+              {/* Campos de Detalhes e Características */}
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Detalhes e Características (Opcional)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Detalhes</label>
+                    <textarea
+                      value={editingProperty.details?.join('\n') || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        details: e.target.value.split('\n').filter(item => item.trim() !== '')
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      rows={4}
+                      placeholder="Digite cada detalhe em uma linha separada&#10;Ex: Piso laminado&#10;Cozinha planejada&#10;Sacada com churrasqueira"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Digite cada detalhe em uma linha separada</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Características</label>
+                    <textarea
+                      value={editingProperty.features?.join('\n') || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? { 
+                        ...prev, 
+                        features: e.target.value.split('\n').filter(item => item.trim() !== '')
+                      } : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      rows={4}
+                      placeholder="Digite cada característica em uma linha separada&#10;Ex: Piscina&#10;Academia&#10;Portaria 24h"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Digite cada característica em uma linha separada</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Imagens Existentes */}
+              {editingProperty.images && editingProperty.images.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Imagens Atuais</label>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {selectedProperty.images.map((image, index) => (
+                    {editingProperty.images.map((image, index) => (
                       <div key={index} className="relative">
                         <img
                           src={image.url}
@@ -1189,196 +1723,29 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Footer do Modal */}
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => setShowPropertyDetails(false)}
-                className="btn-secondary"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Edição do Imóvel */}
-      {showEditPropertyForm && editingProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header do Modal */}
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Editar Imóvel</h2>
-              <button
-                onClick={() => setShowEditPropertyForm(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Formulário de Edição */}
-            <form onSubmit={(e) => {
-              e.preventDefault()
-              const formData = new FormData(e.currentTarget)
-              const updatedData = {
-                title: formData.get('title'),
-                price: Number(formData.get('price')),
-                neighborhood: formData.get('neighborhood'),
-                bedrooms: Number(formData.get('bedrooms')),
-                bathrooms: Number(formData.get('bathrooms')),
-                parkingSpaces: Number(formData.get('parkingSpaces')),
-                totalArea: Number(formData.get('totalArea')),
-                longDescription: formData.get('longDescription'),
-                purpose: formData.get('purpose')
-              }
-              handleUpdateProperty(updatedData)
-            }}>
-              <div className="px-6 py-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Título *
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      defaultValue={editingProperty.title}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Finalidade *
-                    </label>
-                    <select
-                      name="purpose"
-                      defaultValue={editingProperty.purpose}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      <option value="venda">Venda</option>
-                      <option value="aluguel">Aluguel</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preço *
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      defaultValue={editingProperty.price}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bairro *
-                    </label>
-                    <input
-                      type="text"
-                      name="neighborhood"
-                      defaultValue={editingProperty.neighborhood}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quartos
-                    </label>
-                    <input
-                      type="number"
-                      name="bedrooms"
-                      defaultValue={editingProperty.bedrooms}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Banheiros
-                    </label>
-                    <input
-                      type="number"
-                      name="bathrooms"
-                      defaultValue={editingProperty.bathrooms}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vagas
-                    </label>
-                    <input
-                      type="number"
-                      name="parkingSpaces"
-                      defaultValue={editingProperty.parkingSpaces}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Área Total (m²)
-                    </label>
-                    <input
-                      type="number"
-                      name="totalArea"
-                      defaultValue={editingProperty.totalArea}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descrição
-                  </label>
-                  <textarea
-                    name="longDescription"
-                    defaultValue={editingProperty.longDescription}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              {/* Footer do Modal */}
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-4">
+              <div className="flex justify-end space-x-4">
                 <button
-                  type="button"
                   onClick={() => setShowEditPropertyForm(false)}
                   className="btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
-                  type="submit"
+                  onClick={() => handleUpdateProperty(editingProperty)}
                   className="btn-primary"
                 >
                   Salvar Alterações
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
-      
+
       <Footer />
     </div>
   )
 }
+
+export default AdminPage
