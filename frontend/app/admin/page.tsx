@@ -139,6 +139,7 @@ function AdminPage() {
     password: '',
     role: 'client' as 'admin' | 'client'
   })
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     checkAuth()
@@ -165,15 +166,32 @@ function AdminPage() {
 
   const fetchData = async () => {
     try {
+      setIsLoading(true)
       const [usersResponse, propertiesResponse] = await Promise.all([
         api.get('/auth/users'),
         api.get('/properties/admin/all')
       ])
 
-      setUsers(usersResponse.data)
-      setProperties(propertiesResponse.data)
-    } catch (error) {
-      toast.error('Erro ao carregar dados')
+      // Verificações de segurança antes de setar os dados
+      if (usersResponse?.data && Array.isArray(usersResponse.data)) {
+        setUsers(usersResponse.data)
+      } else {
+        setUsers([])
+      }
+
+      if (propertiesResponse?.data && Array.isArray(propertiesResponse.data)) {
+        setProperties(propertiesResponse.data)
+      } else {
+        setProperties([])
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar dados:', error)
+      toast.error('Erro ao carregar dados do dashboard')
+      // Garantir que os arrays não fiquem undefined
+      setUsers([])
+      setProperties([])
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -379,22 +397,40 @@ function AdminPage() {
     }
   }
 
-  // Filtrar propriedades
-  const activeProperties = properties.filter(p => p.status === 'ativo')
-  const pendingProperties = properties.filter(p => p.status === 'inativo')
+  // Filtrar propriedades com verificações de segurança
+  const activeProperties = properties.filter(p => p?.status === 'ativo')
+  const pendingProperties = properties.filter(p => p?.status === 'inativo')
   
-  // Buscar o usuário completo para verificar o role
+  // Buscar o usuário completo para verificar o role (com verificações de segurança)
   const adminProperties = properties.filter(p => {
-    const user = users.find(u => u._id === p.submittedBy._id)
+    if (!p?.submittedBy?._id || !users?.length) return false
+    const user = users.find(u => u?._id === p.submittedBy._id)
     return user?.role === 'admin'
   })
   
   const clientProperties = properties.filter(p => {
-    const user = users.find(u => u._id === p.submittedBy._id)
+    if (!p?.submittedBy?._id || !users?.length) return false
+    const user = users.find(u => u?._id === p.submittedBy._id)
     return user?.role === 'client'
   })
   
-  const activeUsers = users.filter(u => u.isActive).length
+  const activeUsers = users?.filter(u => u?.isActive)?.length || 0
+
+  // Mostrar loading enquanto carrega os dados
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando dashboard...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
