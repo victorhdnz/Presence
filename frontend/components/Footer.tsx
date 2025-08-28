@@ -31,7 +31,7 @@ export default function Footer() {
                 </span>
               </div>
               <div className="flex items-start space-x-2 sm:space-x-3">
-                <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-primary-400 flex-shrink-0 mt-0.5" />
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary-400 flex-shrink-0 mt-0.5" />
                 <span className="text-gray-300 text-sm sm:text-base">CRECI: 21002/MG</span>
               </div>
               <div className="flex items-start space-x-2 sm:space-x-3">

@@ -1048,6 +1048,13 @@ function AdminPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </button>
+                          <button
+                            onClick={() => handleDeleteProperty(property._id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>

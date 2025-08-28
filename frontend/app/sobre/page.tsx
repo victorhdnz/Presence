@@ -207,33 +207,7 @@ export default function SobrePage() {
             </div>
           </div>
 
-          {/* Contato */}
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">
-              Entre em Contato
-            </h2>
-            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-              Estamos aqui para ajudar você a encontrar o imóvel dos seus sonhos. 
-              Entre em contato conosco!
-            </p>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-2xl mx-auto">
-              <div className="flex items-center justify-center space-x-2 sm:space-x-3">
-                <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-                <a href="https://wa.me/553484008321" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 text-sm sm:text-base">
-                  +55 34 8400-8321
-                </a>
-              </div>
-              <div className="flex items-center justify-center space-x-2 sm:space-x-3">
-                <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-                <span className="text-gray-700 text-sm sm:text-base break-all">consultoriapresence@gmail.com</span>
-              </div>
-              <div className="flex items-center justify-center space-x-2 sm:space-x-3">
-                <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-                <span className="text-gray-700 text-sm sm:text-base">RUA IZAU RANGEL DE MENDONÇA, nº 920 - JARDIM FINOTTI</span>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
       
