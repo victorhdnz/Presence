@@ -223,6 +223,7 @@ function AdminPage() {
           // CORREÇÃO IMPORTANTE: response.data.images[0].url em vez de response.data.url
           uploadedImages.push({
             url: response.data.images[0].url,
+            caption: '',
             isMain: image.isMain
           })
         }
@@ -256,8 +257,10 @@ function AdminPage() {
       })
       setNewPropertyImages([])
       fetchData()
-    } catch (error) {
-      toast.error('Erro ao criar imóvel')
+    } catch (error: any) {
+      console.error('Erro ao criar imóvel:', error)
+      const message = error.response?.data?.message || 'Erro ao criar imóvel'
+      toast.error(message)
     }
   }
 
@@ -379,8 +382,18 @@ function AdminPage() {
   // Filtrar propriedades
   const activeProperties = properties.filter(p => p.status === 'ativo')
   const pendingProperties = properties.filter(p => p.status === 'inativo')
-  const adminProperties = properties.filter(p => p.status === 'ativo')
-  const clientProperties = properties.filter(p => p.status === 'inativo')
+  
+  // Buscar o usuário completo para verificar o role
+  const adminProperties = properties.filter(p => {
+    const user = users.find(u => u._id === p.submittedBy._id)
+    return user?.role === 'admin'
+  })
+  
+  const clientProperties = properties.filter(p => {
+    const user = users.find(u => u._id === p.submittedBy._id)
+    return user?.role === 'client'
+  })
+  
   const activeUsers = users.filter(u => u.isActive).length
 
   return (
