@@ -90,7 +90,7 @@ export default function PropertiesPage() {
     // --- Funções para o Sistema de Filtros ---
     
     // Obter bairros únicos para o filtro
-    const uniqueNeighborhoods = [...new Set(properties.map(prop => prop.neighborhood))].sort();
+    const uniqueNeighborhoods = Array.from(new Set(properties.map(prop => prop.neighborhood))).sort();
 
     // Função para limpar todos os filtros
     const clearFilters = () => {
