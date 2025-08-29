@@ -130,7 +130,7 @@ export default function SobrePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-!                        <div className="bg-gray-200 rounded-full w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                <div className="bg-gray-200 rounded-full w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
           <Users className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
         </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">

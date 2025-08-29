@@ -52,6 +52,7 @@ export default function PropertiesPage() {
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [detailsError, setDetailsError] = useState<string | null>(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     // --- Estados para o Sistema de Filtros ---
     const [showFilters, setShowFilters] = useState(true);
@@ -154,6 +155,7 @@ export default function PropertiesPage() {
         setIsLoadingDetails(true);
         setDetailsError(null);
         setSelectedProperty(null);
+        setCurrentImageIndex(0);
 
         try {
             console.log('Buscando detalhes do imóvel:', propertyId);
@@ -174,6 +176,7 @@ export default function PropertiesPage() {
     const handleCloseModal = () => {
         setShowDetailsModal(false);
         setSelectedProperty(null);
+        setCurrentImageIndex(0);
     };
 
     // Suas funções helper originais
@@ -200,6 +203,27 @@ export default function PropertiesPage() {
             const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
+    };
+
+    // --- Funções para Navegação de Imagens ---
+    const handleNextImage = () => {
+        if (selectedProperty && selectedProperty.images.length > 1) {
+            setCurrentImageIndex((prev) => 
+                prev === selectedProperty.images.length - 1 ? 0 : prev + 1
+            );
+        }
+    };
+
+    const handlePreviousImage = () => {
+        if (selectedProperty && selectedProperty.images.length > 1) {
+            setCurrentImageIndex((prev) => 
+                prev === 0 ? selectedProperty.images.length - 1 : prev - 1
+            );
+        }
+    };
+
+    const handleImageClick = (index: number) => {
+        setCurrentImageIndex(index);
     };
 
     return (
@@ -532,32 +556,59 @@ export default function PropertiesPage() {
                                     <div>
                                         {selectedProperty.images && selectedProperty.images.length > 0 && selectedProperty.images.some(img => isValidImageUrl(img.url)) ? (
                                             <div className="space-y-4">
-                                                {/* Imagem Principal */}
-                                                <img 
-                                                    src={selectedProperty.images.find(img => img.isMain && isValidImageUrl(img.url))?.url || 
-                                                         selectedProperty.images.find(img => isValidImageUrl(img.url))?.url || 
-                                                         selectedProperty.images[0]?.url} 
-                                                    alt={selectedProperty.title} 
-                                                    className="w-full h-80 object-cover rounded-lg"
-                                                    onError={(e) => {
-                                                        console.error('Erro ao carregar imagem no modal:', {
-                                                            imovel: selectedProperty.title,
-                                                            url: e.currentTarget.src,
-                                                            images: selectedProperty.images
-                                                        });
-                                                        e.currentTarget.style.display = 'none';
-                                                        const placeholder = document.createElement('div');
-                                                        placeholder.className = 'w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center';
-                                                        placeholder.innerHTML = '<div class="text-center"><svg class="h-16 w-16 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg><p class="text-gray-500">Imagem não encontrada</p></div>';
-                                                        e.currentTarget.parentNode?.appendChild(placeholder);
-                                                    }}
-                                                    onLoad={(e) => {
-                                                        console.log('Imagem carregada no modal:', {
-                                                            imovel: selectedProperty.title,
-                                                            url: e.currentTarget.src
-                                                        });
-                                                    }}
-                                                />
+                                                {/* Imagem Principal com Navegação */}
+                                                <div className="relative">
+                                                    <img 
+                                                        src={selectedProperty.images[currentImageIndex]?.url || 
+                                                             selectedProperty.images.find(img => img.isMain && isValidImageUrl(img.url))?.url || 
+                                                             selectedProperty.images.find(img => isValidImageUrl(img.url))?.url || 
+                                                             selectedProperty.images[0]?.url} 
+                                                        alt={selectedProperty.title} 
+                                                        className="w-full h-80 object-cover rounded-lg"
+                                                        onError={(e) => {
+                                                            console.error('Erro ao carregar imagem no modal:', {
+                                                                imovel: selectedProperty.title,
+                                                                url: e.currentTarget.src,
+                                                                images: selectedProperty.images
+                                                            });
+                                                            e.currentTarget.style.display = 'none';
+                                                            const placeholder = document.createElement('div');
+                                                            placeholder.className = 'w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center';
+                                                            placeholder.innerHTML = '<div class="text-center"><svg class="h-16 w-16 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg><p class="text-gray-500">Imagem não encontrada</p></div>';
+                                                            e.currentTarget.parentNode?.appendChild(placeholder);
+                                                        }}
+                                                        onLoad={(e) => {
+                                                            console.log('Imagem carregada no modal:', {
+                                                                imovel: selectedProperty.title,
+                                                                url: e.currentTarget.src
+                                                            });
+                                                        }}
+                                                    />
+                                                    
+                                                    {/* Botões de Navegação */}
+                                                    {selectedProperty.images.length > 1 && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => handlePreviousImage()}
+                                                                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                                                                title="Imagem anterior"
+                                                            >
+                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                                                </svg>
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleNextImage()}
+                                                                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                                                                title="Próxima imagem"
+                                                            >
+                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                </svg>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                                 
                                                 {/* Miniaturas das Outras Imagens */}
                                                 {selectedProperty.images.length > 1 && (
@@ -570,8 +621,9 @@ export default function PropertiesPage() {
                                                                         src={image.url} 
                                                                         alt={`${selectedProperty.title} - Imagem ${index + 1}`}
                                                                         className={`w-full h-20 object-cover rounded-lg cursor-pointer transition-all ${
-                                                                            (image.isMain || index === 0) ? 'ring-2 ring-primary-500' : 'hover:ring-2 hover:ring-gray-300'
+                                                                            index === currentImageIndex ? 'ring-2 ring-primary-500' : 'hover:ring-2 hover:ring-gray-300'
                                                                         }`}
+                                                                        onClick={() => handleImageClick(index)}
                                                                         onError={(e) => {
                                                                             e.currentTarget.style.display = 'none';
                                                                             const placeholder = document.createElement('div');
@@ -580,8 +632,13 @@ export default function PropertiesPage() {
                                                                             e.currentTarget.parentNode?.appendChild(placeholder);
                                                                         }}
                                                                     />
-                                                                    {image.isMain && (
+                                                                    {index === currentImageIndex && (
                                                                         <div className="absolute top-1 left-1 bg-primary-600 text-white text-xs px-1 py-0.5 rounded">
+                                                                            Atual
+                                                                        </div>
+                                                                    )}
+                                                                    {image.isMain && index !== currentImageIndex && (
+                                                                        <div className="absolute top-1 right-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded">
                                                                             Principal
                                                                         </div>
                                                                     )}
