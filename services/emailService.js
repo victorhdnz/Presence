@@ -98,7 +98,54 @@ const notifyPropertySubmission = async (clientName, clientEmail, propertyData) =
     }
 };
 
+// Função para enviar notificação de mensagem de contato
+const sendContactNotification = async (messageData) => {
+    try {
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: CORRETORAS_EMAILS.join(', '),
+            subject: '📧 Nova Mensagem de Contato - Presence Imobiliária',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2c3e50;">📧 Nova Mensagem de Contato</h2>
+                    <p>Olá, corretoras!</p>
+                    <p>Uma nova mensagem foi enviada através do formulário de contato do site.</p>
+                    
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="color: #34495e; margin-top: 0;">👤 Informações do Cliente:</h3>
+                        <p><strong>Nome:</strong> ${messageData.name}</p>
+                        <p><strong>E-mail:</strong> ${messageData.email}</p>
+                        <p><strong>Telefone:</strong> ${messageData.phone || 'Não informado'}</p>
+                        <p><strong>Assunto:</strong> ${messageData.subject}</p>
+                        
+                        <h3 style="color: #34495e;">💬 Mensagem:</h3>
+                        <p style="background-color: white; padding: 15px; border-radius: 5px; border-left: 4px solid #3498db;">
+                            ${messageData.message}
+                        </p>
+                        
+                        <p><strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+                    </div>
+                    
+                    <p>💡 <strong>Próximo passo:</strong> Entre em contato com o cliente o mais breve possível!</p>
+                    
+                    <hr style="margin: 30px 0; border: none; border-top: 1px solid #ecf0f1;">
+                    <p style="color: #7f8c8d; font-size: 12px;">
+                        Esta notificação foi enviada automaticamente pelo sistema da Presence Imobiliária.
+                    </p>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Notificação de contato enviada para as corretoras sobre ${messageData.name}`);
+    } catch (error) {
+        console.error('❌ Erro ao enviar notificação de contato:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     notifyClientLogin,
-    notifyPropertySubmission
+    notifyPropertySubmission,
+    sendContactNotification
 }; 

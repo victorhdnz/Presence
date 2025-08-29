@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { 
-  Home, Users, Eye, Edit, Trash2, Plus, X, CheckCircle, XCircle, Star, Upload
+  Home, Users, Eye, Edit, Trash2, Plus, X, CheckCircle, XCircle, Star, Upload, MessageCircle
 } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -139,6 +139,9 @@ function AdminPage() {
     role: 'client' as 'admin' | 'client'
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [messages, setMessages] = useState<any[]>([])
+  const [showMessageDetails, setShowMessageDetails] = useState(false)
+  const [selectedMessage, setSelectedMessage] = useState<any>(null)
 
   useEffect(() => {
     checkAuth()
@@ -166,9 +169,10 @@ function AdminPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true)
-      const [usersResponse, propertiesResponse] = await Promise.all([
+      const [usersResponse, propertiesResponse, messagesResponse] = await Promise.all([
         api.get('/auth/users'),
-        api.get('/properties/admin/all')
+        api.get('/properties/admin/all'),
+        api.get('/messages')
       ])
 
       // Verificações de segurança antes de setar os dados
@@ -183,12 +187,19 @@ function AdminPage() {
       } else {
         setProperties([])
       }
+
+      if (messagesResponse?.data && Array.isArray(messagesResponse.data)) {
+        setMessages(messagesResponse.data)
+      } else {
+        setMessages([])
+      }
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error)
       toast.error('Erro ao carregar dados do dashboard')
       // Garantir que os arrays não fiquem undefined
       setUsers([])
       setProperties([])
+      setMessages([])
     } finally {
       setIsLoading(false)
     }
@@ -226,10 +237,14 @@ function AdminPage() {
 
   const handleCreateProperty = async () => {
     try {
+      console.log('Iniciando criação de imóvel...')
+      console.log('Imagens para upload:', newPropertyImages)
+      
       // Upload das imagens primeiro
       const uploadedImages = []
       for (const image of newPropertyImages) {
         if (image.file) {
+          console.log('Fazendo upload da imagem:', image.file.name)
           const formDataImage = new FormData()
           formDataImage.append('images', image.file)
 
@@ -237,14 +252,20 @@ function AdminPage() {
             headers: { 'Content-Type': 'multipart/form-data' }
           })
 
+          console.log('Resposta do upload:', response.data)
+
           // CORREÇÃO IMPORTANTE: response.data.images[0].url em vez de response.data.url
-          uploadedImages.push({
+          const uploadedImage = {
             url: response.data.images[0].url,
             caption: '',
             isMain: image.isMain
-          })
+          }
+          console.log('Imagem processada:', uploadedImage)
+          uploadedImages.push(uploadedImage)
         }
       }
+      
+      console.log('Todas as imagens processadas:', uploadedImages)
 
       const propertyData = {
         ...newProperty,
@@ -256,6 +277,9 @@ function AdminPage() {
         corretor: newProperty.corretor,
         images: uploadedImages
       }
+
+      console.log('Dados do imóvel a serem enviados:', propertyData)
+      console.log('Corretor selecionado:', propertyData.corretor)
 
       await api.post('/properties', propertyData)
       toast.success('Imóvel criado com sucesso!')
@@ -396,6 +420,41 @@ function AdminPage() {
     }
   }
 
+  // Funções para gerenciar mensagens
+  const handleViewMessage = (message: any) => {
+    setSelectedMessage(message)
+    setShowMessageDetails(true)
+  }
+
+  const handleToggleMessageStatus = async (messageId: string, status: string) => {
+    try {
+      const corretor = CORRETORAS[0] // Por padrão, usar a primeira corretora
+      await api.patch(`/messages/${messageId}/status`, { 
+        status, 
+        respondedBy: { 
+          name: corretor.name, 
+          email: corretor.email 
+        } 
+      })
+      toast.success(`Mensagem marcada como ${status}`)
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao atualizar status da mensagem')
+    }
+  }
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta mensagem?')) return
+
+    try {
+      await api.delete(`/messages/${messageId}`)
+      toast.success('Mensagem excluída com sucesso!')
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao excluir mensagem')
+    }
+  }
+
   // Filtrar propriedades com verificações de segurança
   const activeProperties = properties.filter(p => p?.status === 'ativo')
   const pendingProperties = properties.filter(p => p?.status === 'inativo')
@@ -449,6 +508,8 @@ function AdminPage() {
               { id: 'overview', label: 'Visão Geral', icon: Home },
               { id: 'client-properties', label: 'Imóveis de Clientes', icon: Eye },
               { id: 'admin-properties', label: 'Imóveis das Corretoras', icon: Home },
+              { id: 'all-properties', label: 'Todos os Imóveis', icon: Eye },
+              { id: 'messages', label: 'Mensagens', icon: MessageCircle },
               { id: 'users', label: 'Usuários', icon: Users }
             ].map(({ id, label, icon: Icon }) => (
               <button
@@ -849,7 +910,7 @@ function AdminPage() {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Cards de Estatísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -894,6 +955,20 @@ function AdminPage() {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Usuários Ativos</p>
                     <p className="text-2xl font-bold text-gray-900">{activeUsers}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <MessageCircle className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Mensagens Não Respondidas</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {messages.filter(m => m.status === 'não respondida').length}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1163,6 +1238,95 @@ function AdminPage() {
           </div>
         )}
 
+        {activeTab === 'all-properties' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Todos os Imóveis</h3>
+              <p className="text-sm text-gray-600 mt-1">Lista completa de todos os imóveis cadastrados no sistema</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Imóvel
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Enviado por
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Preço
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {properties.map((property) => (
+                    <tr key={property._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{property.title}</div>
+                          <div className="text-sm text-gray-500">{property.neighborhood}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {property.submittedBy?.name || 'N/A'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {property.submittedBy?.email || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          property.status === 'ativo'
+                            ? 'bg-green-100 text-green-800'
+                            : property.status === 'inativo'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {property.status === 'ativo' ? 'Ativo' : property.status === 'inativo' ? 'Pendente' : 'Rejeitado'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        R$ {property.price.toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewDetails(property._id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Ver detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProperty(property._id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {properties.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhum imóvel cadastrado
+                  </div>
+                )}
+              </table>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'users' && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -1247,6 +1411,108 @@ function AdminPage() {
                     </tr>
                   ))}
                 </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'messages' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Gerenciar Mensagens</h3>
+              <p className="text-sm text-gray-600 mt-1">Mensagens enviadas através do formulário de contato</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Assunto
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {messages.map((message) => (
+                    <tr key={message._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{message.name}</div>
+                          <div className="text-sm text-gray-500">{message.email}</div>
+                          {message.phone && (
+                            <div className="text-sm text-gray-500">{message.phone}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{message.subject}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          message.status === 'respondida'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {message.status === 'respondida' ? 'Respondida' : 'Não Respondida'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(message.createdAt).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewMessage(message)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Ver detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          {message.status === 'não respondida' ? (
+                            <button
+                              onClick={() => handleToggleMessageStatus(message._id, 'respondida')}
+                              className="text-green-600 hover:text-green-900"
+                              title="Marcar como respondida"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleMessageStatus(message._id, 'não respondida')}
+                              className="text-yellow-600 hover:text-yellow-900"
+                              title="Marcar como não respondida"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteMessage(message._id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {messages.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhuma mensagem recebida
+                  </div>
+                )}
               </table>
             </div>
           </div>
@@ -1816,6 +2082,118 @@ function AdminPage() {
                 >
                   Salvar Alterações
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes da Mensagem */}
+      {showMessageDetails && selectedMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header do Modal */}
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Detalhes da Mensagem</h2>
+              <button
+                onClick={() => setShowMessageDetails(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Conteúdo do Modal */}
+            <div className="px-6 py-4 space-y-6">
+              {/* Informações do Cliente */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Informações do Cliente</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Nome:</span>
+                    <p className="text-gray-900">{selectedMessage.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">E-mail:</span>
+                    <p className="text-gray-900">{selectedMessage.email}</p>
+                  </div>
+                  {selectedMessage.phone && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Telefone:</span>
+                      <p className="text-gray-900">{selectedMessage.phone}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Assunto:</span>
+                    <p className="text-gray-900">{selectedMessage.subject}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mensagem */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Mensagem</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.message}</p>
+                </div>
+              </div>
+
+              {/* Status e Resposta */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Status e Resposta</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Status:</span>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
+                      selectedMessage.status === 'respondida'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedMessage.status === 'respondida' ? 'Respondida' : 'Não Respondida'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Data de Envio:</span>
+                    <p className="text-gray-900">{new Date(selectedMessage.createdAt).toLocaleString('pt-BR')}</p>
+                  </div>
+                  {selectedMessage.respondedBy && (
+                    <>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Respondida por:</span>
+                        <p className="text-gray-900">{selectedMessage.respondedBy.name}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Data da Resposta:</span>
+                        <p className="text-gray-900">{selectedMessage.respondedAt ? new Date(selectedMessage.respondedAt).toLocaleString('pt-BR') : 'N/A'}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Ações */}
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => setShowMessageDetails(false)}
+                  className="btn-secondary"
+                >
+                  Fechar
+                </button>
+                {selectedMessage.status === 'não respondida' ? (
+                  <button
+                    onClick={() => handleToggleMessageStatus(selectedMessage._id, 'respondida')}
+                    className="btn-primary"
+                  >
+                    Marcar como Respondida
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleToggleMessageStatus(selectedMessage._id, 'não respondida')}
+                    className="btn-secondary"
+                  >
+                    Marcar como Não Respondida
+                  </button>
+                )}
               </div>
             </div>
           </div>

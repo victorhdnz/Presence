@@ -46,10 +46,12 @@ mongoose.connect(dbURI, {
 const authRoutes = require('./routes/auth');
 const propertyRoutes = require('./routes/properties');
 const uploadRoutes = require('./routes/upload');
+const messageRoutes = require('./routes/messages');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Rota de teste
 app.get('/api/health', (req, res) => {

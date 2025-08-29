@@ -44,9 +44,18 @@ export default function ContatoPage() {
 
     try {
       setIsLoading(true)
-      // Aqui você pode implementar o envio do formulário
-      // Por enquanto, vamos simular um envio bem-sucedido
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao enviar mensagem')
+      }
 
       toast.success('Mensagem enviada com sucesso! Entraremos em contato em breve.')
       setFormData({
@@ -57,6 +66,7 @@ export default function ContatoPage() {
         message: ''
       })
     } catch (error) {
+      console.error('Erro ao enviar mensagem:', error)
       toast.error('Erro ao enviar mensagem. Tente novamente.')
     } finally {
       setIsLoading(false)
@@ -287,14 +297,18 @@ export default function ContatoPage() {
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">
               Nossa Localização
             </h2>
-            <div className="bg-gray-200 rounded-lg h-64 sm:h-96 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
-                <p className="text-gray-600 text-sm sm:text-base">
-                  Mapa será integrado aqui<br />
-                  (Google Maps ou similar)
-                </p>
-              </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3774.1234567890123!2d-48.2774!3d-18.9186!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTjCsDU1JzA2LjkiUyA0OMKwMTYnNDIuMCJX!5e0!3m2!1spt-BR!2sbr!4v1234567890123"
+                width="100%"
+                height="400"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Localização da Presence Imobiliária"
+                className="w-full h-64 sm:h-96"
+              ></iframe>
             </div>
           </div>
         </div>

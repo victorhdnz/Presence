@@ -24,6 +24,12 @@ router.get('/', async (req, res) => {
         const properties = await Property.find(filter)
             .populate('submittedBy', 'name email')
             .sort({ isHighlighted: -1, createdAt: -1 });
+
+        console.log(`Encontrados ${properties.length} imóveis ativos`);
+        if (properties.length > 0) {
+            console.log('Primeiro imóvel - Imagens:', properties[0].images);
+            console.log('Primeiro imóvel - Corretor:', properties[0].corretor);
+        }
             
         res.json(properties);
     } catch (error) {
@@ -42,9 +48,13 @@ router.get('/:id', async (req, res) => {
         if (!property) {
             return res.status(404).json({ message: 'Imóvel não encontrado' });
         }
+
+        console.log(`Imóvel ${req.params.id} - Imagens:`, property.images);
+        console.log(`Imóvel ${req.params.id} - Corretor:`, property.corretor);
         
         res.json(property);
     } catch (error) {
+        console.error('Erro ao buscar imóvel específico:', error);
         res.status(500).json({ message: 'Erro ao buscar imóvel' });
     }
 });
@@ -96,6 +106,9 @@ router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
 // ROTA ADMIN: Criar imóvel (admin)
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
+        console.log('Dados recebidos para criar imóvel:', req.body);
+        console.log('Imagens recebidas:', req.body.images);
+
         const property = new Property({
             ...req.body,
             submittedBy: req.user._id,
@@ -105,6 +118,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         });
 
         await property.save();
+        console.log('Imóvel salvo com imagens:', property.images);
 
         res.status(201).json({
             message: 'Imóvel criado com sucesso!',
@@ -112,6 +126,10 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Erro ao criar imóvel:', error);
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({ message: errors.join(', ') });
+        }
         res.status(500).json({ message: 'Erro ao criar imóvel' });
     }
 });

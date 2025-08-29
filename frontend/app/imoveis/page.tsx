@@ -53,13 +53,32 @@ export default function PropertiesPage() {
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [detailsError, setDetailsError] = useState<string | null>(null);
 
+    // --- Estados para o Sistema de Filtros ---
+    const [showFilters, setShowFilters] = useState(true);
+    const [filters, setFilters] = useState({
+        purpose: '',
+        bedrooms: '',
+        parkingSpaces: '',
+        neighborhood: '',
+        minPrice: '',
+        maxPrice: '',
+        minArea: '',
+        maxArea: ''
+    });
+
     // Seu useEffect original para buscar imóveis
     useEffect(() => {
         const fetchProperties = async () => {
             try {
                 const response = await api.get('/properties');
+                console.log('Imóveis recebidos:', response.data);
+                if (response.data.length > 0) {
+                    console.log('Primeiro imóvel - Imagens:', response.data[0].images);
+                    console.log('Primeiro imóvel - Corretor:', response.data[0].corretor);
+                }
                 setProperties(response.data);
             } catch (err) {
+                console.error('Erro ao buscar imóveis:', err);
                 setError('Falha ao buscar os imóveis.');
             } finally {
                 setIsLoading(false);
@@ -67,6 +86,67 @@ export default function PropertiesPage() {
         };
         fetchProperties();
     }, []);
+
+    // --- Funções para o Sistema de Filtros ---
+    
+    // Obter bairros únicos para o filtro
+    const uniqueNeighborhoods = [...new Set(properties.map(prop => prop.neighborhood))].sort();
+
+    // Função para limpar todos os filtros
+    const clearFilters = () => {
+        setFilters({
+            purpose: '',
+            bedrooms: '',
+            parkingSpaces: '',
+            neighborhood: '',
+            minPrice: '',
+            maxPrice: '',
+            minArea: '',
+            maxArea: ''
+        });
+    };
+
+    // Função para mostrar/ocultar filtros
+    const toggleFilters = () => {
+        setShowFilters(!showFilters);
+    };
+
+    // Aplicar filtros aos imóveis
+    const filteredProperties = properties.filter(prop => {
+        // Filtro de finalidade
+        if (filters.purpose && prop.purpose !== filters.purpose) return false;
+        
+        // Filtro de quartos
+        if (filters.bedrooms) {
+            const bedrooms = parseInt(filters.bedrooms);
+            if (bedrooms === 4 && prop.bedrooms < 4) return false;
+            if (bedrooms < 4 && prop.bedrooms !== bedrooms) return false;
+        }
+        
+        // Filtro de vagas
+        if (filters.parkingSpaces) {
+            const parkingSpaces = parseInt(filters.parkingSpaces);
+            if (parkingSpaces === 3 && prop.parkingSpaces < 3) return false;
+            if (parkingSpaces < 3 && prop.parkingSpaces !== parkingSpaces) return false;
+        }
+        
+        // Filtro de bairro
+        if (filters.neighborhood && prop.neighborhood !== filters.neighborhood) return false;
+        
+        // Filtro de preço mínimo
+        if (filters.minPrice && prop.price < parseFloat(filters.minPrice)) return false;
+        
+        // Filtro de preço máximo
+        if (filters.maxPrice && prop.price > parseFloat(filters.maxPrice)) return false;
+        
+        // Filtro de área mínima
+        if (filters.minArea && prop.totalArea && prop.totalArea < parseFloat(filters.minArea)) return false;
+        
+        // Filtro de área máxima
+        if (filters.maxArea && prop.totalArea && prop.totalArea > parseFloat(filters.maxArea)) return false;
+        
+        return true;
+    });
 
     // --- Função para ABRIR o modal e buscar os detalhes ---
     const handleViewDetails = async (propertyId: string) => {
@@ -76,9 +156,14 @@ export default function PropertiesPage() {
         setSelectedProperty(null);
 
         try {
+            console.log('Buscando detalhes do imóvel:', propertyId);
             const response = await api.get(`/properties/${propertyId}`);
+            console.log('Detalhes recebidos:', response.data);
+            console.log('Imagens do imóvel:', response.data.images);
+            console.log('Corretor do imóvel:', response.data.corretor);
             setSelectedProperty(response.data);
         } catch (err) {
+            console.error('Erro ao buscar detalhes:', err);
             setDetailsError('Não foi possível carregar os detalhes deste imóvel.');
         } finally {
             setIsLoadingDetails(false);
@@ -97,6 +182,15 @@ export default function PropertiesPage() {
             style: 'currency',
             currency: 'BRL'
         }).format(price);
+    };
+
+    // Função auxiliar para verificar se a URL da imagem é válida
+    const isValidImageUrl = (url: string) => {
+        if (!url) return false;
+        
+        // URLs do Cloudinary devem começar com https://res.cloudinary.com/
+        const cloudinaryPattern = /^https:\/\/res\.cloudinary\.com\/.+/;
+        return cloudinaryPattern.test(url);
     };
 
     const handleWhatsAppContact = (property: Property) => {
@@ -121,10 +215,198 @@ export default function PropertiesPage() {
                         <p className="text-gray-600 text-sm sm:text-base">
                             Encontre o imóvel perfeito para você
                         </p>
+                        {Object.values(filters).some(filter => filter !== '') && (
+                            <div className="mt-3 p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm font-medium text-primary-800">Filtros ativos:</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {filters.purpose && (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                                    {filters.purpose === 'venda' ? 'Venda' : 'Aluguel'}
+                                                </span>
+                                            )}
+                                            {filters.bedrooms && (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                                    {filters.bedrooms === '4' ? '4+ quartos' : `${filters.bedrooms} quarto${filters.bedrooms !== '1' ? 's' : ''}`}
+                                                </span>
+                                            )}
+                                            {filters.neighborhood && (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                                    {filters.neighborhood}
+                                                </span>
+                                            )}
+                                            {filters.minPrice && (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                                    Min: R$ {parseFloat(filters.minPrice).toLocaleString('pt-BR')}
+                                                </span>
+                                            )}
+                                            {filters.maxPrice && (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                                    Max: R$ {parseFloat(filters.maxPrice).toLocaleString('pt-BR')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={clearFilters}
+                                        className="text-primary-600 hover:text-primary-700 text-sm font-medium underline"
+                                    >
+                                        Limpar todos
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                    {/* Sistema de Filtros */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Filtros de Busca</h2>
+                            <button
+                                onClick={toggleFilters}
+                                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                            >
+                                {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+                            </button>
+                        </div>
+                        
+                        {showFilters && (
+                            <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            {/* Filtro de Finalidade */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Finalidade</label>
+                                <select 
+                                    value={filters.purpose} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, purpose: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="">Todas</option>
+                                    <option value="venda">Venda</option>
+                                    <option value="aluguel">Aluguel</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro de Quartos */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Quartos</label>
+                                <select 
+                                    value={filters.bedrooms} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, bedrooms: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="">Qualquer</option>
+                                    <option value="1">1 quarto</option>
+                                    <option value="2">2 quartos</option>
+                                    <option value="3">3 quartos</option>
+                                    <option value="4">4+ quartos</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro de Vagas */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Vagas</label>
+                                <select 
+                                    value={filters.parkingSpaces} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, parkingSpaces: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="">Qualquer</option>
+                                    <option value="0">Sem vaga</option>
+                                    <option value="1">1 vaga</option>
+                                    <option value="2">2 vagas</option>
+                                    <option value="3">3+ vagas</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro de Bairro */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Bairro</label>
+                                <select 
+                                    value={filters.neighborhood} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, neighborhood: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="">Todos</option>
+                                    {uniqueNeighborhoods.map(neighborhood => (
+                                        <option key={neighborhood} value={neighborhood}>{neighborhood}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Filtros de Preço e Área */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            {/* Preço Mínimo */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Preço Mínimo</label>
+                                <input
+                                    type="number"
+                                    placeholder="R$ 0"
+                                    value={filters.minPrice} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Preço Máximo */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Preço Máximo</label>
+                                <input
+                                    type="number"
+                                    placeholder="R$ 999.999"
+                                    value={filters.maxPrice} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Área Mínima */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Área Mínima (m²)</label>
+                                <input
+                                    type="number"
+                                    placeholder="0"
+                                    value={filters.minArea} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, minArea: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Área Máxima */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Área Máxima (m²)</label>
+                                <input
+                                    type="number"
+                                    placeholder="9999"
+                                    value={filters.maxArea} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, maxArea: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Botões de Ação */}
+                        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
+                            <div className="text-sm text-gray-600">
+                                {filteredProperties.length} de {properties.length} imóveis encontrados
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={clearFilters}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
+                                >
+                                    Limpar Filtros
+                                </button>
+                            </div>
+                        </div>
+                        </>
+                        )}
+                    </div>
+
                     {isLoading && (
                         <div className="flex justify-center items-center p-16">
                             <Loader2 className="animate-spin h-12 w-12 text-primary-600" />
@@ -136,15 +418,45 @@ export default function PropertiesPage() {
                     )}
                     
                     {!isLoading && !error && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-                            {properties.map((prop) => (
-                                <div key={prop._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-lg hover:scale-105">
+                        <>
+                        {filteredProperties.length === 0 ? (
+                            <div className="text-center py-16">
+                                <Home className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum imóvel encontrado</h3>
+                                <p className="text-gray-600 mb-4">Tente ajustar os filtros de busca ou limpar todos os filtros.</p>
+                                <button
+                                    onClick={clearFilters}
+                                    className="px-6 py-2 text-sm font-medium text-primary-600 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                >
+                                    Limpar Filtros
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                                {filteredProperties.map((prop) => (
+                                    <div key={prop._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-lg hover:scale-105">
                                     <div className="relative h-48 sm:h-56 bg-gray-200">
-                                        {prop.images && prop.images.length > 0 ? (
+                                        {prop.images && prop.images.length > 0 && prop.images.some(img => isValidImageUrl(img.url)) ? (
                                             <img
-                                                src={prop.images.find(img => img.isMain)?.url || prop.images[0].url}
+                                                src={prop.images.find(img => img.isMain && isValidImageUrl(img.url))?.url || 
+                                                     prop.images.find(img => isValidImageUrl(img.url))?.url || 
+                                                     prop.images[0]?.url}
                                                 alt={prop.title}
                                                 className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    console.error('Erro ao carregar imagem:', {
+                                                        imovel: prop.title,
+                                                        url: e.currentTarget.src,
+                                                        images: prop.images
+                                                    });
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                                onLoad={(e) => {
+                                                    console.log('Imagem carregada com sucesso:', {
+                                                        imovel: prop.title,
+                                                        url: e.currentTarget.src
+                                                    });
+                                                }}
                                             />
                                         ) : (
                                             <div className="flex items-center justify-center h-full">
@@ -173,7 +485,11 @@ export default function PropertiesPage() {
                                             <div className="flex items-center"><Car className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" /> <span className="truncate">{prop.parkingSpaces} vagas</span></div>
                                         </div>
                                         {prop.totalArea && <div className="text-xs sm:text-sm text-gray-600 mb-3"><span className="font-medium">Área:</span> {prop.totalArea}m²</div>}
-                                        {prop.corretor && <div className="text-xs sm:text-sm text-gray-600 mb-3"><span className="font-medium">Corretor:</span> {prop.corretor.name}</div>}
+                                        {prop.corretor && prop.corretor.name && (
+                                            <div className="text-xs sm:text-sm text-gray-600 mb-3">
+                                                <span className="font-medium">Corretor:</span> {prop.corretor.name}
+                                            </div>
+                                        )}
                                         <div className="space-y-2">
                                             {/* A CORREÇÃO ESTÁ AQUI: O onClick chama a função handleViewDetails */}
                                             <button
@@ -193,7 +509,9 @@ export default function PropertiesPage() {
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                            </div>
+                        )}
+                        </>
                     )}
                 </div>
             </div>
@@ -212,10 +530,39 @@ export default function PropertiesPage() {
                             {selectedProperty && (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <div>
-                                        {selectedProperty.images && selectedProperty.images.length > 0 ? (
-                                            <img src={selectedProperty.images.find(img => img.isMain)?.url || selectedProperty.images[0].url} alt={selectedProperty.title} className="w-full h-80 object-cover rounded-lg mb-4" />
+                                        {selectedProperty.images && selectedProperty.images.length > 0 && selectedProperty.images.some(img => isValidImageUrl(img.url)) ? (
+                                            <img 
+                                                src={selectedProperty.images.find(img => img.isMain && isValidImageUrl(img.url))?.url || 
+                                                     selectedProperty.images.find(img => isValidImageUrl(img.url))?.url || 
+                                                     selectedProperty.images[0]?.url} 
+                                                alt={selectedProperty.title} 
+                                                className="w-full h-80 object-cover rounded-lg mb-4"
+                                                onError={(e) => {
+                                                    console.error('Erro ao carregar imagem no modal:', {
+                                                        imovel: selectedProperty.title,
+                                                        url: e.currentTarget.src,
+                                                        images: selectedProperty.images
+                                                    });
+                                                    e.currentTarget.style.display = 'none';
+                                                    const placeholder = document.createElement('div');
+                                                    placeholder.className = 'w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center';
+                                                    placeholder.innerHTML = '<div class="text-center"><svg class="h-16 w-16 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg><p class="text-gray-500">Imagem não encontrada</p></div>';
+                                                    e.currentTarget.parentNode?.appendChild(placeholder);
+                                                }}
+                                                onLoad={(e) => {
+                                                    console.log('Imagem carregada no modal:', {
+                                                        imovel: selectedProperty.title,
+                                                        url: e.currentTarget.src
+                                                    });
+                                                }}
+                                            />
                                         ) : (
-                                            <div className="w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center"><Home className="h-16 w-16 text-gray-400" /></div>
+                                            <div className="w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <Home className="h-16 w-16 text-gray-400 mx-auto mb-2" />
+                                                    <p className="text-gray-500">Nenhuma imagem disponível</p>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                     <div>
@@ -238,7 +585,37 @@ export default function PropertiesPage() {
                                             <><h4 className="font-bold text-lg mb-2">Características Especiais</h4><ul className="list-disc list-inside text-gray-600 mb-6 space-y-1">{selectedProperty.features.map((feature, index) => (<li key={index}>{feature}</li>))}</ul></>
                                         )}
                                         {selectedProperty.corretor && (
-                                            <><h4 className="font-bold text-lg mb-2">Corretor Responsável</h4><div className="bg-primary-50 p-4 rounded-lg flex items-center justify-between"><div><p className="font-semibold text-gray-800">{selectedProperty.corretor.name}</p>{selectedProperty.corretor.whatsapp && <a href={`https://wa.me/${selectedProperty.corretor.whatsapp.replace(/\D/g, '')}`} target="_blank" className="text-green-600 text-sm hover:underline">Falar no WhatsApp</a>}{selectedProperty.corretor.email && <a href={`mailto:${selectedProperty.corretor.email}`} className="text-blue-600 text-sm hover:underline block">{selectedProperty.corretor.email}</a>}</div><MessageSquare className="text-primary-400" size={32}/></div></>
+                                            <>
+                                                <h4 className="font-bold text-lg mb-2">Corretor Responsável</h4>
+                                                <div className="bg-primary-50 p-4 rounded-lg">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-gray-800 text-lg mb-2">{selectedProperty.corretor.name}</p>
+                                                            {selectedProperty.corretor.whatsapp && (
+                                                                <a 
+                                                                    href={`https://wa.me/${selectedProperty.corretor.whatsapp.replace(/\D/g, '')}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center text-green-600 text-sm hover:text-green-700 hover:underline mr-4 mb-2"
+                                                                >
+                                                                    <MessageSquare className="h-4 w-4 mr-1" />
+                                                                    Falar no WhatsApp
+                                                                </a>
+                                                            )}
+                                                            {selectedProperty.corretor.email && (
+                                                                <a 
+                                                                    href={`mailto:${selectedProperty.corretor.email}`} 
+                                                                    className="inline-flex items-center text-blue-600 text-sm hover:text-blue-700 hover:underline"
+                                                                >
+                                                                    <span>📧</span>
+                                                                    <span className="ml-1">{selectedProperty.corretor.email}</span>
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                        <MessageSquare className="text-primary-400 flex-shrink-0" size={32}/>
+                                                    </div>
+                                                </div>
+                                            </>
                                         )}
                                     </div>
                                 </div>

@@ -23,17 +23,23 @@ router.post('/images', authenticateToken, upload.array('images', 10), async (req
             return res.status(400).json({ message: 'Nenhuma imagem foi enviada' });
         }
 
-        const uploadedImages = req.files.map(file => ({
-            url: file.path,
-            publicId: file.filename,
-            caption: req.body.caption || '',
-            isMain: false
-        }));
+        const uploadedImages = req.files.map((file, index) => {
+            console.log(`Arquivo ${index + 1}:`, {
+                path: file.path,
+                filename: file.filename,
+                originalname: file.originalname,
+                size: file.size
+            });
+            
+            return {
+                url: file.path,
+                publicId: file.filename,
+                caption: req.body.caption || '',
+                isMain: index === 0 // Primeira imagem é sempre a principal
+            };
+        });
 
-        // Se apenas uma imagem, marcar como principal
-        if (uploadedImages.length === 1) {
-            uploadedImages[0].isMain = true;
-        }
+        console.log('Imagens processadas para upload:', uploadedImages);
 
         res.status(200).json({
             message: `${uploadedImages.length} imagem(ns) enviada(s) com sucesso!`,
