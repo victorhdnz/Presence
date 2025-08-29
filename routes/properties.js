@@ -62,36 +62,64 @@ router.get('/:id', async (req, res) => {
 // ROTA PROTEGIDA: Cliente cadastrar imóvel
 router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
     try {
+        console.log('=== INÍCIO DO CADASTRO DE IMÓVEL ===');
+        console.log('Usuário autenticado:', req.user);
+        console.log('Dados recebidos:', req.body);
+        
         const {
             title, purpose, price, neighborhood, address,
             bedrooms, bathrooms, parkingSpaces, landSize, totalArea,
             longDescription, details, features, corretor
         } = req.body;
 
+        // Validar dados obrigatórios
+        if (!title || !purpose || !price || !neighborhood || !bedrooms || !bathrooms) {
+            console.log('Dados obrigatórios faltando:', { title, purpose, price, neighborhood, bedrooms, bathrooms });
+            return res.status(400).json({ message: 'Dados obrigatórios faltando' });
+        }
+
+        // Para clientes, o campo corretor é opcional
+        // Será preenchido pelo admin quando aprovar o imóvel
+
         // Criar novo imóvel
-        const property = new Property({
+        const propertyData = {
             title,
             purpose,
-            price,
+            price: Number(price),
             neighborhood,
             address,
-            bedrooms,
-            bathrooms,
-            parkingSpaces,
-            landSize,
-            totalArea,
+            bedrooms: Number(bedrooms),
+            bathrooms: Number(bathrooms),
+            parkingSpaces: Number(parkingSpaces) || 0,
+            landSize: Number(landSize) || undefined,
+            totalArea: Number(totalArea) || undefined,
             longDescription,
-            details,
-            features,
-            corretor,
+            details: details || [],
+            features: features || [],
             submittedBy: req.user._id,
             status: 'inativo' // Aguardando aprovação do admin
-        });
+        };
+
+        // Adicionar corretor apenas se fornecido
+        if (corretor && corretor.name) {
+            propertyData.corretor = corretor;
+        }
+
+        const property = new Property(propertyData);
+
+        console.log('Imóvel a ser salvo:', property);
 
         await property.save();
+        console.log('Imóvel salvo com sucesso:', property._id);
 
         // Notificar as corretoras
-        await notifyPropertySubmission(req.user.name, req.user.email, property);
+        try {
+            await notifyPropertySubmission(req.user.name, req.user.email, property);
+            console.log('Notificação enviada com sucesso');
+        } catch (notifyError) {
+            console.error('Erro ao enviar notificação:', notifyError);
+            // Não falhar se a notificação não for enviada
+        }
 
         res.status(201).json({
             message: 'Imóvel cadastrado com sucesso! Aguardando aprovação.',
@@ -99,6 +127,10 @@ router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('Erro ao cadastrar imóvel:', error);
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({ message: errors.join(', ') });
+        }
         res.status(500).json({ message: 'Erro ao cadastrar imóvel' });
     }
 });

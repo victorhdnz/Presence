@@ -73,11 +73,11 @@ const propertySchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    // Corretora responsável pelo imóvel
+    // Corretora responsável pelo imóvel (opcional para clientes, obrigatório para admins)
     corretor: {
-        name: { type: String, required: true, enum: ['Heloisa', 'Vânia'] },
-        whatsapp: { type: String, required: true },
-        email: { type: String, required: true }
+        name: { type: String, enum: ['Heloisa', 'Vânia'] },
+        whatsapp: { type: String },
+        email: { type: String }
     },
     submittedBy: {
         type: mongoose.Schema.Types.ObjectId,

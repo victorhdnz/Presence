@@ -291,6 +291,14 @@ export default function CadastrarImovelPage() {
         images: uploadedImages
       }
 
+      // Verificar se o usuário está logado
+      const token = localStorage.getItem('presence_token')
+      if (!token) {
+        toast.error('Você precisa estar logado para cadastrar um imóvel')
+        router.push('/login')
+        return
+      }
+
       await api.post('/properties/submit', cleanFormData)
       
       toast.success('Imóvel cadastrado com sucesso! Aguardando aprovação.')
