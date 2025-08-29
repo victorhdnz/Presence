@@ -33,7 +33,7 @@ interface PropertyForm {
   longDescription: string
   details: string[]
   features: string[]
-  corretor: {
+  corretor?: {
     name: string
     whatsapp: string
     email: string
@@ -71,11 +71,12 @@ export default function CadastrarImovelPage() {
     longDescription: '',
     details: [''],
     features: [''],
-    corretor: {
-      name: 'Helo',
-      whatsapp: '(34) 99999-9999',
-      email: 'helo@presence.com'
-    },
+    // O campo corretor será preenchido pelo admin quando aprovar o imóvel
+    // corretor: {
+    //   name: '',
+    //   whatsapp: '',
+    //   email: ''
+    // },
     images: []
   })
 
