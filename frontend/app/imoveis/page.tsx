@@ -531,31 +531,66 @@ export default function PropertiesPage() {
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <div>
                                         {selectedProperty.images && selectedProperty.images.length > 0 && selectedProperty.images.some(img => isValidImageUrl(img.url)) ? (
-                                            <img 
-                                                src={selectedProperty.images.find(img => img.isMain && isValidImageUrl(img.url))?.url || 
-                                                     selectedProperty.images.find(img => isValidImageUrl(img.url))?.url || 
-                                                     selectedProperty.images[0]?.url} 
-                                                alt={selectedProperty.title} 
-                                                className="w-full h-80 object-cover rounded-lg mb-4"
-                                                onError={(e) => {
-                                                    console.error('Erro ao carregar imagem no modal:', {
-                                                        imovel: selectedProperty.title,
-                                                        url: e.currentTarget.src,
-                                                        images: selectedProperty.images
-                                                    });
-                                                    e.currentTarget.style.display = 'none';
-                                                    const placeholder = document.createElement('div');
-                                                    placeholder.className = 'w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center';
-                                                    placeholder.innerHTML = '<div class="text-center"><svg class="h-16 w-16 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg><p class="text-gray-500">Imagem não encontrada</p></div>';
-                                                    e.currentTarget.parentNode?.appendChild(placeholder);
-                                                }}
-                                                onLoad={(e) => {
-                                                    console.log('Imagem carregada no modal:', {
-                                                        imovel: selectedProperty.title,
-                                                        url: e.currentTarget.src
-                                                    });
-                                                }}
-                                            />
+                                            <div className="space-y-4">
+                                                {/* Imagem Principal */}
+                                                <img 
+                                                    src={selectedProperty.images.find(img => img.isMain && isValidImageUrl(img.url))?.url || 
+                                                         selectedProperty.images.find(img => isValidImageUrl(img.url))?.url || 
+                                                         selectedProperty.images[0]?.url} 
+                                                    alt={selectedProperty.title} 
+                                                    className="w-full h-80 object-cover rounded-lg"
+                                                    onError={(e) => {
+                                                        console.error('Erro ao carregar imagem no modal:', {
+                                                            imovel: selectedProperty.title,
+                                                            url: e.currentTarget.src,
+                                                            images: selectedProperty.images
+                                                        });
+                                                        e.currentTarget.style.display = 'none';
+                                                        const placeholder = document.createElement('div');
+                                                        placeholder.className = 'w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center';
+                                                        placeholder.innerHTML = '<div class="text-center"><svg class="h-16 w-16 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg><p class="text-gray-500">Imagem não encontrada</p></div>';
+                                                        e.currentTarget.parentNode?.appendChild(placeholder);
+                                                    }}
+                                                    onLoad={(e) => {
+                                                        console.log('Imagem carregada no modal:', {
+                                                            imovel: selectedProperty.title,
+                                                            url: e.currentTarget.src
+                                                        });
+                                                    }}
+                                                />
+                                                
+                                                {/* Miniaturas das Outras Imagens */}
+                                                {selectedProperty.images.length > 1 && (
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-700 mb-3">Todas as Imagens ({selectedProperty.images.length})</h4>
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            {selectedProperty.images.map((image, index) => (
+                                                                <div key={index} className="relative">
+                                                                    <img 
+                                                                        src={image.url} 
+                                                                        alt={`${selectedProperty.title} - Imagem ${index + 1}`}
+                                                                        className={`w-full h-20 object-cover rounded-lg cursor-pointer transition-all ${
+                                                                            (image.isMain || index === 0) ? 'ring-2 ring-primary-500' : 'hover:ring-2 hover:ring-gray-300'
+                                                                        }`}
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                            const placeholder = document.createElement('div');
+                                                                            placeholder.className = 'w-full h-20 bg-gray-200 rounded-lg flex items-center justify-center';
+                                                                            placeholder.innerHTML = '<div class="text-center"><svg class="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
+                                                                            e.currentTarget.parentNode?.appendChild(placeholder);
+                                                                        }}
+                                                                    />
+                                                                    {image.isMain && (
+                                                                        <div className="absolute top-1 left-1 bg-primary-600 text-white text-xs px-1 py-0.5 rounded">
+                                                                            Principal
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : (
                                             <div className="w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center">
                                                 <div className="text-center">

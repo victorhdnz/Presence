@@ -58,13 +58,9 @@ export default function SobrePage() {
                   </p>
                 </div>
               </div>
-              <div className="order-1 lg:order-2">
-                <img 
-                  src="/images/imagemempresa.jpg" 
-                  alt="Presence Consultoria Imobiliária" 
-                  className="w-full h-64 sm:h-80 object-cover rounded-lg shadow-lg"
-                />
-              </div>
+                    <div className="order-1 lg:order-2 bg-gray-200 rounded-lg h-64 sm:h-80 flex items-center justify-center">
+        <Building2 className="h-16 w-16 sm:h-24 sm:w-24 text-gray-400" />
+      </div>
             </div>
           </div>
 
@@ -134,13 +130,9 @@ export default function SobrePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-!                <div className="mx-auto mb-3 sm:mb-4">
-                  <img 
-                    src="/images/imagemheloisa.jpg" 
-                    alt="Heloisa - Corretora Especialista" 
-                    className="w-16 h-16 sm:w-24 sm:h-24 rounded-full object-cover mx-auto shadow-md"
-                  />
-                </div>
+!                        <div className="bg-gray-200 rounded-full w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+          <Users className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
+        </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                   Heloisa
                 </h3>
@@ -164,13 +156,9 @@ export default function SobrePage() {
               </div>
 
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-                <div className="mx-auto mb-3 sm:mb-4">
-                  <img 
-                    src="/images/imagemvania.jpg" 
-                    alt="Vânia - Corretora Especialista" 
-                    className="w-16 h-16 sm:w-24 sm:h-24 rounded-full object-cover mx-auto shadow-md"
-                  />
-                </div>
+                        <div className="bg-gray-200 rounded-full w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+          <Users className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
+        </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                   Vânia
                 </h3>
