@@ -61,6 +61,7 @@ export default function PropertiesPage() {
         purpose: '',
         bedrooms: '',
         parkingSpaces: '',
+        suites: '',
         neighborhood: '',
         minPrice: '',
         maxPrice: '',
@@ -100,6 +101,7 @@ export default function PropertiesPage() {
             purpose: '',
             bedrooms: '',
             parkingSpaces: '',
+            suites: '',
             neighborhood: '',
             minPrice: '',
             maxPrice: '',
@@ -130,6 +132,13 @@ export default function PropertiesPage() {
             const parkingSpaces = parseInt(filters.parkingSpaces);
             if (parkingSpaces === 3 && prop.parkingSpaces < 3) return false;
             if (parkingSpaces < 3 && prop.parkingSpaces !== parkingSpaces) return false;
+        }
+        
+        // Filtro de suítes
+        if (filters.suites) {
+            const suites = parseInt(filters.suites);
+            if (suites === 3 && prop.suites < 3) return false;
+            if (suites < 3 && prop.suites !== suites) return false;
         }
         
         // Filtro de bairro
@@ -256,6 +265,11 @@ export default function PropertiesPage() {
                                                     {filters.bedrooms === '4' ? '4+ quartos' : `${filters.bedrooms} quarto${filters.bedrooms !== '1' ? 's' : ''}`}
                                                 </span>
                                             )}
+                                            {filters.suites && (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                                    {filters.suites === '3' ? '3+ suítes' : `${filters.suites} suíte${filters.suites !== '1' ? 's' : ''}`}
+                                                </span>
+                                            )}
                                             {filters.neighborhood && (
                                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                                                     {filters.neighborhood}
@@ -344,6 +358,22 @@ export default function PropertiesPage() {
                                     <option value="1">1 vaga</option>
                                     <option value="2">2 vagas</option>
                                     <option value="3">3+ vagas</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro de Suítes */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Suítes</label>
+                                <select 
+                                    value={filters.suites} 
+                                    onChange={(e) => setFilters(prev => ({ ...prev, suites: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="">Qualquer</option>
+                                    <option value="0">Sem suíte</option>
+                                    <option value="1">1 suíte</option>
+                                    <option value="2">2 suítes</option>
+                                    <option value="3">3+ suítes</option>
                                 </select>
                             </div>
 
