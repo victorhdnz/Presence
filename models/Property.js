@@ -45,6 +45,11 @@ const propertySchema = new mongoose.Schema({
         default: 0,
         min: 0
     },
+    suites: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
     landSize: {
         type: Number, // em m²
         min: 0

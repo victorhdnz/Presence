@@ -27,6 +27,7 @@ interface Property {
     bedrooms: number;
     bathrooms: number;
     parkingSpaces: number;
+    suites: number;
     totalArea?: number;
     images: Array<{ url: string; isMain: boolean }>;
     longDescription?: string;
@@ -503,10 +504,11 @@ export default function PropertiesPage() {
                                             <span className="text-sm truncate">{prop.neighborhood}</span>
                                         </div>
                                         <div className="text-xl sm:text-2xl font-bold text-primary-600 mb-4">{formatPrice(prop.price)}</div>
-                                        <div className="grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-3">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-3">
                                             <div className="flex items-center"><Bed className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" /> <span className="truncate">{prop.bedrooms} quartos</span></div>
                                             <div className="flex items-center"><Bath className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" /> <span className="truncate">{prop.bathrooms} banheiros</span></div>
                                             <div className="flex items-center"><Car className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" /> <span className="truncate">{prop.parkingSpaces} vagas</span></div>
+                                            <div className="flex items-center"><Star className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" /> <span className="truncate">{prop.suites} suítes</span></div>
                                         </div>
                                         {prop.totalArea && <div className="text-xs sm:text-sm text-gray-600 mb-3"><span className="font-medium">Área:</span> {prop.totalArea}m²</div>}
                                         {prop.corretor && prop.corretor.name && (
@@ -661,11 +663,12 @@ export default function PropertiesPage() {
                                         <h3 className="text-3xl font-bold text-gray-900">{selectedProperty.title}</h3>
                                         <div className="flex items-center text-gray-600 my-3"><MapPin size={18} className="mr-2" /><span>{selectedProperty.neighborhood}</span></div>
                                         <div className="text-4xl font-bold text-primary-600 mb-6">{formatPrice(selectedProperty.price)}</div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 text-center">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-center">
                                             <div className="bg-gray-100 p-3 rounded-lg"><Bed className="mx-auto mb-1" /> {selectedProperty.bedrooms} Quartos</div>
                                             <div className="bg-gray-100 p-3 rounded-lg"><Bath className="mx-auto mb-1" /> {selectedProperty.bathrooms} Banheiros</div>
                                             <div className="bg-gray-100 p-3 rounded-lg"><Car className="mx-auto mb-1" /> {selectedProperty.parkingSpaces} Vagas</div>
-                                            {selectedProperty.totalArea && <div className="bg-gray-100 p-3 rounded-lg col-span-2 sm:col-span-3"><Ruler className="mx-auto mb-1" /> {selectedProperty.totalArea} m²</div>}
+                                            <div className="bg-gray-100 p-3 rounded-lg"><Star className="mx-auto mb-1" /> {selectedProperty.suites} Suítes</div>
+                                            {selectedProperty.totalArea && <div className="bg-gray-100 p-3 rounded-lg col-span-2 sm:col-span-4"><Ruler className="mx-auto mb-1" /> {selectedProperty.totalArea} m²</div>}
                                         </div>
                                         {selectedProperty.longDescription && (
                                             <><h4 className="font-bold text-lg mb-2">Descrição</h4><p className="text-gray-600 mb-6">{selectedProperty.longDescription}</p></>

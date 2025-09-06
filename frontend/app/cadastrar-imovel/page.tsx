@@ -28,6 +28,7 @@ interface PropertyForm {
   bedrooms: number
   bathrooms: number
   parkingSpaces: number
+  suites: number
   landSize: number
   totalArea: number
   longDescription: string
@@ -66,6 +67,7 @@ export default function CadastrarImovelPage() {
     bedrooms: 0,
     bathrooms: 0,
     parkingSpaces: 0,
+    suites: 0,
     landSize: 0,
     totalArea: 0,
     longDescription: '',
@@ -531,6 +533,22 @@ export default function CadastrarImovelPage() {
                       id="parkingSpaces"
                       name="parkingSpaces"
                       value={formData.parkingSpaces || ''}
+                      onChange={handleNumberChange}
+                      className="input-field"
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="suites" className="form-label">
+                      Suítes
+                    </label>
+                    <input
+                      type="number"
+                      id="suites"
+                      name="suites"
+                      value={formData.suites || ''}
                       onChange={handleNumberChange}
                       className="input-field"
                       placeholder="0"

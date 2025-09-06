@@ -68,7 +68,7 @@ router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
         
         const {
             title, purpose, price, neighborhood, address,
-            bedrooms, bathrooms, parkingSpaces, landSize, totalArea,
+            bedrooms, bathrooms, parkingSpaces, suites, landSize, totalArea,
             longDescription, details, features, corretor
         } = req.body;
 
@@ -91,6 +91,7 @@ router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
             bedrooms: Number(bedrooms),
             bathrooms: Number(bathrooms),
             parkingSpaces: Number(parkingSpaces) || 0,
+            suites: Number(suites) || 0,
             landSize: Number(landSize) || undefined,
             totalArea: Number(totalArea) || undefined,
             longDescription,

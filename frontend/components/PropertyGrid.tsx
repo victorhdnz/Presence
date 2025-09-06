@@ -25,6 +25,7 @@ interface Property {
   bedrooms: number
   bathrooms: number
   parkingSpaces: number
+  suites: number
   totalArea?: number
   images: Array<{ url: string; isMain: boolean }>
   longDescription?: string
@@ -202,18 +203,22 @@ export default function PropertyGrid() {
                   </div>
 
                   {/* Características */}
-                  <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-gray-600">
                     <div className="flex items-center">
                       <Bed className="h-4 w-4 mr-1" />
                       <span>{property.bedrooms} quartos</span>
                     </div>
                     <div className="flex items-center">
                       <Bath className="h-4 w-4 mr-1" />
-                      <span>{property.bedrooms} banheiros</span>
+                      <span>{property.bathrooms} banheiros</span>
                     </div>
                     <div className="flex items-center">
                       <Car className="h-4 w-4 mr-1" />
                       <span>{property.parkingSpaces} vagas</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Star className="h-4 w-4 mr-1" />
+                      <span>{property.suites} suítes</span>
                     </div>
                   </div>
 
@@ -300,7 +305,7 @@ export default function PropertyGrid() {
                       {formatPrice(selectedProperty.price)}
                     </div>
                     
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 text-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-center">
                       <div className="bg-gray-100 p-3 rounded-lg">
                         <Bed className="mx-auto mb-1" /> {selectedProperty.bedrooms} Quartos
                       </div>
@@ -310,8 +315,11 @@ export default function PropertyGrid() {
                       <div className="bg-gray-100 p-3 rounded-lg">
                         <Car className="mx-auto mb-1" /> {selectedProperty.parkingSpaces} Vagas
                       </div>
+                      <div className="bg-gray-100 p-3 rounded-lg">
+                        <Star className="mx-auto mb-1" /> {selectedProperty.suites} Suítes
+                      </div>
                       {selectedProperty.totalArea && (
-                        <div className="bg-gray-100 p-3 rounded-lg col-span-2 sm:col-span-3">
+                        <div className="bg-gray-100 p-3 rounded-lg col-span-2 sm:col-span-4">
                           <Ruler className="mx-auto mb-1" /> {selectedProperty.totalArea} m²
                         </div>
                       )}
