@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { 
-  Home, Users, Eye, Edit, Trash2, Plus, X, CheckCircle, XCircle, Star, Upload, MessageCircle
+  Home, Users, Eye, Edit, Trash2, Plus, X, CheckCircle, XCircle, Star, Upload, MessageCircle, Contact
 } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -48,6 +48,12 @@ interface Property {
   longDescription?: string
   details?: string[]
   features?: string[]
+  owner?: {
+    name?: string
+    phone?: string
+    email?: string
+    notes?: string
+  }
   corretor: {
     name: string
     whatsapp: string
@@ -97,6 +103,12 @@ interface NewProperty {
   longDescription: string
   details?: string[]
   features?: string[]
+  owner?: {
+    name: string
+    phone: string
+    email: string
+    notes: string
+  }
   corretor: {
     name: string
     whatsapp: string
@@ -131,6 +143,12 @@ function AdminPage() {
     suites: '',
     totalArea: '',
     longDescription: '',
+    owner: {
+      name: '',
+      phone: '',
+      email: '',
+      notes: ''
+    },
     corretor: CORRETORAS[0]
   })
   const [newPropertyImages, setNewPropertyImages] = useState<PropertyImage[]>([])
@@ -145,6 +163,26 @@ function AdminPage() {
   const [messages, setMessages] = useState<any[]>([])
   const [showMessageDetails, setShowMessageDetails] = useState(false)
   const [selectedMessage, setSelectedMessage] = useState<any>(null)
+  const [clients, setClients] = useState<any[]>([])
+  const [showNewClientForm, setShowNewClientForm] = useState(false)
+  const [showClientDetails, setShowClientDetails] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<any>(null)
+  const [editingClient, setEditingClient] = useState<any>(null)
+  const [newClient, setNewClient] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    preferences: {
+      propertyType: [],
+      purpose: 'venda',
+      priceRange: { min: '', max: '' },
+      neighborhoods: [],
+      bedrooms: { min: '', max: '' },
+      features: []
+    },
+    notes: '',
+    status: 'ativo'
+  })
 
   useEffect(() => {
     checkAuth()
@@ -172,10 +210,11 @@ function AdminPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true)
-      const [usersResponse, propertiesResponse, messagesResponse] = await Promise.all([
+      const [usersResponse, propertiesResponse, messagesResponse, clientsResponse] = await Promise.all([
         api.get('/auth/users'),
         api.get('/properties/admin/all'),
-        api.get('/messages')
+        api.get('/messages'),
+        api.get('/clients')
       ])
 
       // Verificações de segurança antes de setar os dados
@@ -196,6 +235,12 @@ function AdminPage() {
       } else {
         setMessages([])
       }
+
+      if (clientsResponse?.data?.clients && Array.isArray(clientsResponse.data.clients)) {
+        setClients(clientsResponse.data.clients)
+      } else {
+        setClients([])
+      }
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error)
       toast.error('Erro ao carregar dados do dashboard')
@@ -203,6 +248,7 @@ function AdminPage() {
       setUsers([])
       setProperties([])
       setMessages([])
+      setClients([])
     } finally {
       setIsLoading(false)
     }
@@ -278,6 +324,12 @@ function AdminPage() {
         parkingSpaces: Number(newProperty.parkingSpaces),
         suites: Number(newProperty.suites),
         totalArea: Number(newProperty.totalArea),
+        owner: newProperty.owner && (
+          newProperty.owner.name || 
+          newProperty.owner.phone || 
+          newProperty.owner.email || 
+          newProperty.owner.notes
+        ) ? newProperty.owner : undefined,
         corretor: newProperty.corretor,
         images: uploadedImages
       }
@@ -514,6 +566,7 @@ function AdminPage() {
               { id: 'client-properties', label: 'Imóveis de Clientes', icon: Eye },
               { id: 'admin-properties', label: 'Imóveis das Corretoras', icon: Home },
               { id: 'all-properties', label: 'Todos os Imóveis', icon: Eye },
+              { id: 'clients', label: 'Perfis de Clientes', icon: Contact },
               { id: 'messages', label: 'Mensagens', icon: MessageCircle },
               { id: 'users', label: 'Usuários', icon: Users }
             ].map(({ id, label, icon: Icon }) => (
@@ -711,45 +764,63 @@ function AdminPage() {
                       />
                     </div>
 
+                  </div>
+                </div>
+
+                {/* Informações do Proprietário */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Informações do Proprietário (Opcional)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Proprietário</label>
                       <input
                         type="text"
-                        value={newProperty.address?.city || ''}
-                        onChange={(e) => setNewProperty(prev => ({ 
-                          ...prev, 
-                          address: { ...prev.address, city: e.target.value, state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                        value={newProperty.owner?.name || ''}
+                        onChange={(e) => setNewProperty(prev => ({
+                          ...prev,
+                          owner: { ...prev.owner, name: e.target.value }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="São Paulo"
+                        placeholder="Nome completo do proprietário"
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
                       <input
-                        type="text"
-                        value={newProperty.address?.state || ''}
-                        onChange={(e) => setNewProperty(prev => ({ 
-                          ...prev, 
-                          address: { ...prev.address, state: e.target.value, city: prev.address?.city || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                        type="tel"
+                        value={newProperty.owner?.phone || ''}
+                        onChange={(e) => setNewProperty(prev => ({
+                          ...prev,
+                          owner: { ...prev.owner, phone: e.target.value }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="SP"
+                        placeholder="(xx) xxxxx-xxxx"
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">CEP</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                       <input
-                        type="text"
-                        value={newProperty.address?.zipCode || ''}
-                        onChange={(e) => setNewProperty(prev => ({ 
-                          ...prev, 
-                          address: { ...prev.address, zipCode: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
+                        type="email"
+                        value={newProperty.owner?.email || ''}
+                        onChange={(e) => setNewProperty(prev => ({
+                          ...prev,
+                          owner: { ...prev.owner, email: e.target.value }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="00000-000"
+                        placeholder="email@exemplo.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Observações</label>
+                      <textarea
+                        value={newProperty.owner?.notes || ''}
+                        onChange={(e) => setNewProperty(prev => ({
+                          ...prev,
+                          owner: { ...prev.owner, notes: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        rows={3}
+                        placeholder="Observações sobre o proprietário..."
                       />
                     </div>
                   </div>
@@ -792,32 +863,86 @@ function AdminPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Detalhes</label>
-                      <textarea
-                        value={newProperty.details?.join('\n') || ''}
-                        onChange={(e) => setNewProperty(prev => ({ 
-                          ...prev, 
-                          details: e.target.value.split('\n').filter(item => item.trim() !== '')
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        rows={4}
-                        placeholder="Digite cada detalhe em uma linha separada&#10;Ex: Piso laminado&#10;Cozinha planejada&#10;Sacada com churrasqueira"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Digite cada detalhe em uma linha separada</p>
+                      <div className="space-y-2">
+                        {(newProperty.details || []).map((detail, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={detail}
+                              onChange={(e) => {
+                                const updatedDetails = [...(newProperty.details || [])];
+                                updatedDetails[index] = e.target.value;
+                                setNewProperty(prev => ({ ...prev, details: updatedDetails }));
+                              }}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              placeholder="Ex: Piso laminado, Cozinha planejada..."
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updatedDetails = (newProperty.details || []).filter((_, i) => i !== index);
+                                setNewProperty(prev => ({ ...prev, details: updatedDetails }));
+                              }}
+                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedDetails = [...(newProperty.details || []), ''];
+                            setNewProperty(prev => ({ ...prev, details: updatedDetails }));
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                        >
+                          <Plus size={16} />
+                          Adicionar Detalhe
+                        </button>
+                      </div>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Características</label>
-                      <textarea
-                        value={newProperty.features?.join('\n') || ''}
-                        onChange={(e) => setNewProperty(prev => ({ 
-                          ...prev, 
-                          features: e.target.value.split('\n').filter(item => item.trim() !== '')
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        rows={4}
-                        placeholder="Digite cada característica em uma linha separada&#10;Ex: Piscina&#10;Academia&#10;Portaria 24h"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Digite cada característica em uma linha separada</p>
+                      <div className="space-y-2">
+                        {(newProperty.features || []).map((feature, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={feature}
+                              onChange={(e) => {
+                                const updatedFeatures = [...(newProperty.features || [])];
+                                updatedFeatures[index] = e.target.value;
+                                setNewProperty(prev => ({ ...prev, features: updatedFeatures }));
+                              }}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              placeholder="Ex: Piscina, Academia, Portaria 24h..."
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updatedFeatures = (newProperty.features || []).filter((_, i) => i !== index);
+                                setNewProperty(prev => ({ ...prev, features: updatedFeatures }));
+                              }}
+                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedFeatures = [...(newProperty.features || []), ''];
+                            setNewProperty(prev => ({ ...prev, features: updatedFeatures }));
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                        >
+                          <Plus size={16} />
+                          Adicionar Característica
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1966,45 +2091,63 @@ function AdminPage() {
                     />
                   </div>
 
+                </div>
+              </div>
+
+              {/* Informações do Proprietário */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Informações do Proprietário (Opcional)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Proprietário</label>
                     <input
                       type="text"
-                      value={editingProperty.address?.city || ''}
-                      onChange={(e) => setEditingProperty(prev => prev ? { 
-                        ...prev, 
-                        address: { ...prev.address, city: e.target.value, state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
-                      } : null)}
+                      value={editingProperty.owner?.name || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? ({
+                        ...prev,
+                        owner: { ...prev.owner, name: e.target.value }
+                      }) : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="São Paulo"
+                      placeholder="Nome completo do proprietário"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
                     <input
-                      type="text"
-                      value={editingProperty.address?.state || ''}
-                      onChange={(e) => setEditingProperty(prev => prev ? { 
-                        ...prev, 
-                        address: { ...prev.address, state: e.target.value, city: prev.address?.city || '', street: prev.address?.street || '', number: prev.address?.number || '' }
-                      } : null)}
+                      type="tel"
+                      value={editingProperty.owner?.phone || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? ({
+                        ...prev,
+                        owner: { ...prev.owner, phone: e.target.value }
+                      }) : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="SP"
+                      placeholder="(xx) xxxxx-xxxx"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">CEP</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                     <input
-                      type="text"
-                      value={editingProperty.address?.zipCode || ''}
-                      onChange={(e) => setEditingProperty(prev => prev ? { 
-                        ...prev, 
-                        address: { ...prev.address, zipCode: e.target.value, city: prev.address?.city || '', state: prev.address?.state || '', street: prev.address?.street || '', number: prev.address?.number || '' }
-                      } : null)}
+                      type="email"
+                      value={editingProperty.owner?.email || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? ({
+                        ...prev,
+                        owner: { ...prev.owner, email: e.target.value }
+                      }) : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="00000-000"
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Observações</label>
+                    <textarea
+                      value={editingProperty.owner?.notes || ''}
+                      onChange={(e) => setEditingProperty(prev => prev ? ({
+                        ...prev,
+                        owner: { ...prev.owner, notes: e.target.value }
+                      }) : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      rows={3}
+                      placeholder="Observações sobre o proprietário..."
                     />
                   </div>
                 </div>
@@ -2046,32 +2189,86 @@ function AdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Detalhes</label>
-                    <textarea
-                      value={editingProperty.details?.join('\n') || ''}
-                      onChange={(e) => setEditingProperty(prev => prev ? { 
-                        ...prev, 
-                        details: e.target.value.split('\n').filter(item => item.trim() !== '')
-                      } : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      rows={4}
-                      placeholder="Digite cada detalhe em uma linha separada&#10;Ex: Piso laminado&#10;Cozinha planejada&#10;Sacada com churrasqueira"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Digite cada detalhe em uma linha separada</p>
+                    <div className="space-y-2">
+                      {(editingProperty.details || []).map((detail, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={detail}
+                            onChange={(e) => {
+                              const updatedDetails = [...(editingProperty.details || [])];
+                              updatedDetails[index] = e.target.value;
+                              setEditingProperty(prev => prev ? ({ ...prev, details: updatedDetails }) : null);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Ex: Piso laminado, Cozinha planejada..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedDetails = (editingProperty.details || []).filter((_, i) => i !== index);
+                              setEditingProperty(prev => prev ? ({ ...prev, details: updatedDetails }) : null);
+                            }}
+                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedDetails = [...(editingProperty.details || []), ''];
+                          setEditingProperty(prev => prev ? ({ ...prev, details: updatedDetails }) : null);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                      >
+                        <Plus size={16} />
+                        Adicionar Detalhe
+                      </button>
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Características</label>
-                    <textarea
-                      value={editingProperty.features?.join('\n') || ''}
-                      onChange={(e) => setEditingProperty(prev => prev ? { 
-                        ...prev, 
-                        features: e.target.value.split('\n').filter(item => item.trim() !== '')
-                      } : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      rows={4}
-                      placeholder="Digite cada característica em uma linha separada&#10;Ex: Piscina&#10;Academia&#10;Portaria 24h"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Digite cada característica em uma linha separada</p>
+                    <div className="space-y-2">
+                      {(editingProperty.features || []).map((feature, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={feature}
+                            onChange={(e) => {
+                              const updatedFeatures = [...(editingProperty.features || [])];
+                              updatedFeatures[index] = e.target.value;
+                              setEditingProperty(prev => prev ? ({ ...prev, features: updatedFeatures }) : null);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Ex: Piscina, Academia, Portaria 24h..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedFeatures = (editingProperty.features || []).filter((_, i) => i !== index);
+                              setEditingProperty(prev => prev ? ({ ...prev, features: updatedFeatures }) : null);
+                            }}
+                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedFeatures = [...(editingProperty.features || []), ''];
+                          setEditingProperty(prev => prev ? ({ ...prev, features: updatedFeatures }) : null);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                      >
+                        <Plus size={16} />
+                        Adicionar Característica
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2228,7 +2425,145 @@ function AdminPage() {
             </div>
           </div>
         </div>
-      )}
+        )}
+
+        {/* Aba de Perfis de Clientes */}
+        {activeTab === 'clients' && (
+          <div className="space-y-6">
+            {/* Header com botão de adicionar */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Perfis de Clientes</h2>
+                <p className="text-gray-600">Gerencie os perfis e preferências dos clientes</p>
+              </div>
+              <button
+                onClick={() => setShowNewClientForm(true)}
+                className="btn-primary flex items-center space-x-2"
+              >
+                <Plus size={20} />
+                <span>Novo Cliente</span>
+              </button>
+            </div>
+
+            {/* Lista de Clientes */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cliente
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Preferências
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Última Atualização
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {clients.map((client) => (
+                      <tr key={client._id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                            <div className="text-sm text-gray-500">{client.email}</div>
+                            {client.phone && (
+                              <div className="text-sm text-gray-500">{client.phone}</div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {client.preferences?.propertyType?.length > 0 && (
+                              <div>Tipo: {client.preferences.propertyType.join(', ')}</div>
+                            )}
+                            {client.preferences?.purpose && (
+                              <div>Finalidade: {client.preferences.purpose}</div>
+                            )}
+                            {client.preferences?.priceRange?.min && client.preferences?.priceRange?.max && (
+                              <div>
+                                Preço: R$ {client.preferences.priceRange.min.toLocaleString()} - R$ {client.preferences.priceRange.max.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            client.status === 'ativo'
+                              ? 'bg-green-100 text-green-800'
+                              : client.status === 'convertido'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {client.status === 'ativo' ? 'Ativo' : 
+                             client.status === 'convertido' ? 'Convertido' : 'Inativo'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(client.updatedAt).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setSelectedClient(client)
+                                setShowClientDetails(true)
+                              }}
+                              className="text-primary-600 hover:text-primary-900"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingClient(client)
+                                setShowNewClientForm(true)
+                              }}
+                              className="text-yellow-600 hover:text-yellow-900"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Tem certeza que deseja excluir este cliente?')) {
+                                  // handleDeleteClient(client._id)
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {clients.length === 0 && (
+                <div className="text-center py-8">
+                  <Contact size={48} className="mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum cliente cadastrado</h3>
+                  <p className="text-gray-500 mb-4">Comece cadastrando o primeiro perfil de cliente</p>
+                  <button
+                    onClick={() => setShowNewClientForm(true)}
+                    className="btn-primary"
+                  >
+                    Cadastrar Primeiro Cliente
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       <Footer />
     </div>

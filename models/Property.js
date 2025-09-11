@@ -78,6 +78,13 @@ const propertySchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // Proprietário do imóvel (visível apenas para admins)
+    owner: {
+        name: { type: String, trim: true },
+        phone: { type: String, trim: true },
+        email: { type: String, trim: true },
+        notes: { type: String, trim: true } // notas adicionais sobre o proprietário
+    },
     // Corretora responsável pelo imóvel (opcional para clientes, obrigatório para admins)
     corretor: {
         name: { type: String, enum: ['Heloisa', 'Vânia'] },

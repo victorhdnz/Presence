@@ -1,5 +1,6 @@
 const express = require('express');
 const Property = require('../models/Property');
+const Neighborhood = require('../models/Neighborhood');
 const { authenticateToken, requireAdmin, requireAuth } = require('../middleware/auth');
 const { notifyPropertySubmission } = require('../services/emailService');
 
@@ -81,6 +82,33 @@ router.post('/submit', authenticateToken, requireAuth, async (req, res) => {
         // Para clientes, o campo corretor é opcional
         // Será preenchido pelo admin quando aprovar o imóvel
 
+        // Cadastrar bairro automaticamente se não existir
+        if (neighborhood) {
+            let neighborhoodDoc = await Neighborhood.findOne({ 
+                name: { $regex: new RegExp(`^${neighborhood}$`, 'i') }
+            });
+
+            if (!neighborhoodDoc) {
+                neighborhoodDoc = new Neighborhood({
+                    name: neighborhood.trim(),
+                    streets: address?.street ? [{ name: address.street.trim() }] : []
+                });
+                await neighborhoodDoc.save();
+                console.log('Novo bairro cadastrado pelo cliente:', neighborhoodDoc.name);
+            } else if (address?.street) {
+                // Verificar se a rua já existe no bairro
+                const existingStreet = neighborhoodDoc.streets.find(
+                    street => street.name.toLowerCase() === address.street.trim().toLowerCase()
+                );
+
+                if (!existingStreet) {
+                    neighborhoodDoc.streets.push({ name: address.street.trim() });
+                    await neighborhoodDoc.save();
+                    console.log('Nova rua adicionada ao bairro pelo cliente:', address.street);
+                }
+            }
+        }
+
         // Criar novo imóvel
         const propertyData = {
             title,
@@ -141,6 +169,33 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
         console.log('Dados recebidos para criar imóvel:', req.body);
         console.log('Imagens recebidas:', req.body.images);
+
+        // Cadastrar bairro automaticamente se não existir
+        if (req.body.neighborhood) {
+            let neighborhood = await Neighborhood.findOne({ 
+                name: { $regex: new RegExp(`^${req.body.neighborhood}$`, 'i') }
+            });
+
+            if (!neighborhood) {
+                neighborhood = new Neighborhood({
+                    name: req.body.neighborhood.trim(),
+                    streets: req.body.address?.street ? [{ name: req.body.address.street.trim() }] : []
+                });
+                await neighborhood.save();
+                console.log('Novo bairro cadastrado:', neighborhood.name);
+            } else if (req.body.address?.street) {
+                // Verificar se a rua já existe no bairro
+                const existingStreet = neighborhood.streets.find(
+                    street => street.name.toLowerCase() === req.body.address.street.trim().toLowerCase()
+                );
+
+                if (!existingStreet) {
+                    neighborhood.streets.push({ name: req.body.address.street.trim() });
+                    await neighborhood.save();
+                    console.log('Nova rua adicionada ao bairro:', req.body.address.street);
+                }
+            }
+        }
 
         const property = new Property({
             ...req.body,

@@ -47,11 +47,15 @@ const authRoutes = require('./routes/auth');
 const propertyRoutes = require('./routes/properties');
 const uploadRoutes = require('./routes/upload');
 const messageRoutes = require('./routes/messages');
+const neighborhoodRoutes = require('./routes/neighborhoods');
+const clientRoutes = require('./routes/clients');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/neighborhoods', neighborhoodRoutes);
+app.use('/api/clients', clientRoutes);
 
 // Rota de teste
 app.get('/api/health', (req, res) => {
