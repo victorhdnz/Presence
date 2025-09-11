@@ -500,6 +500,70 @@ function AdminPage() {
     }
   }
 
+  const handleCreateClient = async () => {
+    try {
+      if (!newClient.name.trim()) {
+        toast.error('Nome do cliente é obrigatório')
+        return
+      }
+
+      const clientData = {
+        ...newClient,
+        preferences: {
+          ...newClient.preferences,
+          priceRange: {
+            min: newClient.preferences.priceRange.min ? Number(newClient.preferences.priceRange.min) : undefined,
+            max: newClient.preferences.priceRange.max ? Number(newClient.preferences.priceRange.max) : undefined
+          },
+          bedrooms: {
+            min: newClient.preferences.bedrooms.min ? Number(newClient.preferences.bedrooms.min) : undefined,
+            max: newClient.preferences.bedrooms.max ? Number(newClient.preferences.bedrooms.max) : undefined
+          }
+        }
+      }
+
+      if (editingClient) {
+        await api.put(`/clients/${editingClient._id}`, clientData)
+        toast.success('Cliente atualizado com sucesso!')
+      } else {
+        await api.post('/clients', clientData)
+        toast.success('Cliente criado com sucesso!')
+      }
+
+      setShowNewClientForm(false)
+      setEditingClient(null)
+      setNewClient({
+        name: '',
+        phone: '',
+        email: '',
+        preferences: {
+          propertyType: [],
+          purpose: 'venda',
+          priceRange: { min: '', max: '' },
+          neighborhoods: [],
+          bedrooms: { min: '', max: '' },
+          features: []
+        },
+        notes: '',
+        status: 'ativo'
+      })
+      fetchData()
+    } catch (error: any) {
+      console.error('Erro ao salvar cliente:', error)
+      toast.error(error.response?.data?.message || 'Erro ao salvar cliente')
+    }
+  }
+
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      await api.delete(`/clients/${clientId}`)
+      toast.success('Cliente excluído com sucesso!')
+      fetchData()
+    } catch (error) {
+      toast.error('Erro ao excluir cliente')
+    }
+  }
+
   const handleDeleteMessage = async (messageId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta mensagem?')) return
 
@@ -776,8 +840,8 @@ function AdminPage() {
                       <input
                         type="text"
                         value={newProperty.owner?.name || ''}
-                        onChange={(e) => setNewProperty(prev => ({
-                          ...prev,
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
                           owner: { ...prev.owner, name: e.target.value }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -789,8 +853,8 @@ function AdminPage() {
                       <input
                         type="tel"
                         value={newProperty.owner?.phone || ''}
-                        onChange={(e) => setNewProperty(prev => ({
-                          ...prev,
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
                           owner: { ...prev.owner, phone: e.target.value }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -802,8 +866,8 @@ function AdminPage() {
                       <input
                         type="email"
                         value={newProperty.owner?.email || ''}
-                        onChange={(e) => setNewProperty(prev => ({
-                          ...prev,
+                        onChange={(e) => setNewProperty(prev => ({ 
+                          ...prev, 
                           owner: { ...prev.owner, email: e.target.value }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -2104,7 +2168,7 @@ function AdminPage() {
                       type="text"
                       value={editingProperty.owner?.name || ''}
                       onChange={(e) => setEditingProperty(prev => prev ? ({
-                        ...prev,
+                        ...prev, 
                         owner: { ...prev.owner, name: e.target.value }
                       }) : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -2117,7 +2181,7 @@ function AdminPage() {
                       type="tel"
                       value={editingProperty.owner?.phone || ''}
                       onChange={(e) => setEditingProperty(prev => prev ? ({
-                        ...prev,
+                        ...prev, 
                         owner: { ...prev.owner, phone: e.target.value }
                       }) : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -2130,7 +2194,7 @@ function AdminPage() {
                       type="email"
                       value={editingProperty.owner?.email || ''}
                       onChange={(e) => setEditingProperty(prev => prev ? ({
-                        ...prev,
+                        ...prev, 
                         owner: { ...prev.owner, email: e.target.value }
                       }) : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -2524,6 +2588,27 @@ function AdminPage() {
                             <button
                               onClick={() => {
                                 setEditingClient(client)
+                                setNewClient({
+                                  name: client.name || '',
+                                  phone: client.phone || '',
+                                  email: client.email || '',
+                                  preferences: {
+                                    propertyType: client.preferences?.propertyType || [],
+                                    purpose: client.preferences?.purpose || 'venda',
+                                    priceRange: {
+                                      min: client.preferences?.priceRange?.min?.toString() || '',
+                                      max: client.preferences?.priceRange?.max?.toString() || ''
+                                    },
+                                    neighborhoods: client.preferences?.neighborhoods || [],
+                                    bedrooms: {
+                                      min: client.preferences?.bedrooms?.min?.toString() || '',
+                                      max: client.preferences?.bedrooms?.max?.toString() || ''
+                                    },
+                                    features: client.preferences?.features || []
+                                  },
+                                  notes: client.notes || '',
+                                  status: client.status || 'ativo'
+                                })
                                 setShowNewClientForm(true)
                               }}
                               className="text-yellow-600 hover:text-yellow-900"
@@ -2533,7 +2618,7 @@ function AdminPage() {
                             <button
                               onClick={() => {
                                 if (confirm('Tem certeza que deseja excluir este cliente?')) {
-                                  // handleDeleteClient(client._id)
+                                  handleDeleteClient(client._id)
                                 }
                               }}
                               className="text-red-600 hover:text-red-900"
@@ -2561,6 +2646,235 @@ function AdminPage() {
                   </button>
                 </div>
               )}
+          </div>
+        </div>
+        )}
+
+        {/* Modal de Cadastro/Edição de Cliente */}
+        {showNewClientForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
+                </h3>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Informações Básicas */}
+                <div>
+                  <h4 className="text-md font-medium text-gray-900 mb-4">Informações Básicas</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nome *</label>
+                      <input
+                        type="text"
+                        value={newClient.name}
+                        onChange={(e) => setNewClient(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="Nome completo do cliente"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                      <input
+                        type="tel"
+                        value={newClient.phone}
+                        onChange={(e) => setNewClient(prev => ({ ...prev, phone: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="(xx) xxxxx-xxxx"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={newClient.email}
+                        onChange={(e) => setNewClient(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="email@exemplo.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                      <select
+                        value={newClient.status}
+                        onChange={(e) => setNewClient(prev => ({ ...prev, status: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="convertido">Convertido</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preferências */}
+                <div>
+                  <h4 className="text-md font-medium text-gray-900 mb-4">Preferências</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Imóvel</label>
+                      <div className="space-y-2">
+                        {['casa', 'apartamento', 'terreno', 'comercial', 'rural'].map(type => (
+                          <label key={type} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={newClient.preferences.propertyType.includes(type)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNewClient(prev => ({
+                                    ...prev,
+                                    preferences: {
+                                      ...prev.preferences,
+                                      propertyType: [...prev.preferences.propertyType, type]
+                                    }
+                                  }))
+                                } else {
+                                  setNewClient(prev => ({
+                                    ...prev,
+                                    preferences: {
+                                      ...prev.preferences,
+                                      propertyType: prev.preferences.propertyType.filter(t => t !== type)
+                                    }
+                                  }))
+                                }
+                              }}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700 capitalize">{type}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Finalidade</label>
+                      <select
+                        value={newClient.preferences.purpose}
+                        onChange={(e) => setNewClient(prev => ({
+                          ...prev,
+                          preferences: { ...prev.preferences, purpose: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="venda">Venda</option>
+                        <option value="aluguel">Aluguel</option>
+                        <option value="ambos">Ambos</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Preço Mínimo (R$)</label>
+                      <input
+                        type="number"
+                        value={newClient.preferences.priceRange.min}
+                        onChange={(e) => setNewClient(prev => ({
+                          ...prev,
+                          preferences: {
+                            ...prev.preferences,
+                            priceRange: { ...prev.preferences.priceRange, min: e.target.value }
+                          }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Preço Máximo (R$)</label>
+                      <input
+                        type="number"
+                        value={newClient.preferences.priceRange.max}
+                        onChange={(e) => setNewClient(prev => ({
+                          ...prev,
+                          preferences: {
+                            ...prev.preferences,
+                            priceRange: { ...prev.preferences.priceRange, max: e.target.value }
+                          }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Quartos Mínimos</label>
+                      <input
+                        type="number"
+                        value={newClient.preferences.bedrooms.min}
+                        onChange={(e) => setNewClient(prev => ({
+                          ...prev,
+                          preferences: {
+                            ...prev.preferences,
+                            bedrooms: { ...prev.preferences.bedrooms, min: e.target.value }
+                          }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Quartos Máximos</label>
+                      <input
+                        type="number"
+                        value={newClient.preferences.bedrooms.max}
+                        onChange={(e) => setNewClient(prev => ({
+                          ...prev,
+                          preferences: {
+                            ...prev.preferences,
+                            bedrooms: { ...prev.preferences.bedrooms, max: e.target.value }
+                          }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Observações */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Observações</label>
+                  <textarea
+                    value={newClient.notes}
+                    onChange={(e) => setNewClient(prev => ({ ...prev, notes: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    rows={4}
+                    placeholder="Observações sobre o cliente, preferências especiais, etc..."
+                  />
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-4">
+                <button
+                  onClick={() => {
+                    setShowNewClientForm(false)
+                    setEditingClient(null)
+                    setNewClient({
+                      name: '',
+                      phone: '',
+                      email: '',
+                      preferences: {
+                        propertyType: [],
+                        purpose: 'venda',
+                        priceRange: { min: '', max: '' },
+                        neighborhoods: [],
+                        bedrooms: { min: '', max: '' },
+                        features: []
+                      },
+                      notes: '',
+                      status: 'ativo'
+                    })
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCreateClient}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  {editingClient ? 'Atualizar Cliente' : 'Criar Cliente'}
+                </button>
+              </div>
             </div>
           </div>
         )}
