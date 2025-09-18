@@ -61,7 +61,7 @@ export default function SobrePage() {
                     <div className="order-1 lg:order-2">
                 <div className="rounded-lg overflow-hidden h-64 sm:h-80">
                   <img
-                    src="/images/imagemempresa.jpg"
+                    src="./images/imagemempresa.jpg"
                     alt="Presence Imobiliária - Nossa empresa"
                     className="w-full h-full object-cover"
                   />
@@ -138,7 +138,7 @@ export default function SobrePage() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
                 <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
                   <img
-                    src="/images/imagemheloisa.jpg"
+                    src="./images/imagemheloisa.jpg"
                     alt="Heloisa - Corretora Especialista"
                     className="w-full h-full object-cover rounded-full"
                   />
@@ -168,7 +168,7 @@ export default function SobrePage() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
                 <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
                   <img
-                    src="/images/imagemvania.jpg"
+                    src="./images/imagemvania.jpg"
                     alt="Vânia - Corretora Especialista"
                     className="w-full h-full object-cover rounded-full"
                   />
