@@ -1,7 +1,6 @@
 'use client'
 
 import { Building2, Users, Award, MapPin, Phone, Mail, CheckCircle } from 'lucide-react'
-import Image from 'next/image'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
@@ -60,13 +59,11 @@ export default function SobrePage() {
                 </div>
               </div>
                     <div className="order-1 lg:order-2">
-                <div className="relative rounded-lg overflow-hidden h-64 sm:h-80">
-                  <Image
+                <div className="rounded-lg overflow-hidden h-64 sm:h-80">
+                  <img
                     src="/images/imagemempresa.jpg"
                     alt="Presence Imobiliária - Nossa empresa"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="w-full h-full object-cover"
                   />
                 </div>
               </div>
@@ -139,13 +136,11 @@ export default function SobrePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-                <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
-                  <Image
+                <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
+                  <img
                     src="/images/imagemheloisa.jpg"
                     alt="Heloisa - Corretora Especialista"
-                    fill
-                    className="object-cover rounded-full"
-                    sizes="(max-width: 640px) 64px, 96px"
+                    className="w-full h-full object-cover rounded-full"
                   />
                 </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
@@ -171,13 +166,11 @@ export default function SobrePage() {
               </div>
 
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-                <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
-                  <Image
+                <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
+                  <img
                     src="/images/imagemvania.jpg"
                     alt="Vânia - Corretora Especialista"
-                    fill
-                    className="object-cover rounded-full"
-                    sizes="(max-width: 640px) 64px, 96px"
+                    className="w-full h-full object-cover rounded-full"
                   />
                 </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
