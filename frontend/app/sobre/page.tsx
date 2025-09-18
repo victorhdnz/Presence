@@ -1,6 +1,7 @@
 'use client'
 
 import { Building2, Users, Award, MapPin, Phone, Mail, CheckCircle } from 'lucide-react'
+import Image from 'next/image'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
@@ -58,9 +59,17 @@ export default function SobrePage() {
                   </p>
                 </div>
               </div>
-                    <div className="order-1 lg:order-2 bg-gray-200 rounded-lg h-64 sm:h-80 flex items-center justify-center">
-        <Building2 className="h-16 w-16 sm:h-24 sm:w-24 text-gray-400" />
-      </div>
+                    <div className="order-1 lg:order-2">
+                <div className="relative rounded-lg overflow-hidden h-64 sm:h-80">
+                  <Image
+                    src="/images/imagemempresa.jpg"
+                    alt="Presence Imobiliária - Nossa empresa"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -130,9 +139,15 @@ export default function SobrePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-                <div className="bg-gray-200 rounded-full w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-          <Users className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
-        </div>
+                <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
+                  <Image
+                    src="/images/imagemheloisa.jpg"
+                    alt="Heloisa - Corretora Especialista"
+                    fill
+                    className="object-cover rounded-full"
+                    sizes="(max-width: 640px) 64px, 96px"
+                  />
+                </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                   Heloisa
                 </h3>
@@ -156,9 +171,15 @@ export default function SobrePage() {
               </div>
 
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-                        <div className="bg-gray-200 rounded-full w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-          <Users className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
-        </div>
+                <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
+                  <Image
+                    src="/images/imagemvania.jpg"
+                    alt="Vânia - Corretora Especialista"
+                    fill
+                    className="object-cover rounded-full"
+                    sizes="(max-width: 640px) 64px, 96px"
+                  />
+                </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                   Vânia
                 </h3>
