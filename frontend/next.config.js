@@ -6,7 +6,8 @@ const nextConfig = {
     unoptimized: true,
     domains: ['localhost', 'res.cloudinary.com'],
   },
-  assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
+  assetPrefix: '',
+  basePath: '',
 }
 
 module.exports = nextConfig
